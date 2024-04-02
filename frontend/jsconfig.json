@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["./*"]
+      }
+    },
+    "include": [
+      "**/*.js",
+      "src/**/*.d.js",
+      "src/types/**/*.d.js",
+      "src/**/*.js",
+      "src/**/*.jsx",
+      "src/**/*.vue",
+      "wailsjs/**/*.d.ts",
+      "wailsjs/**/*.js",
+      "node_modules/primevue/config/PrimeVue.d.ts"
+    ],
+    "compileOnSave": false
+}
+
+  
