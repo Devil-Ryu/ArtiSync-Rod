@@ -9,19 +9,16 @@ import (
 func TestAll(t *testing.T) {
 	// app := application.NewATApp()
 	// app.LoadArticles("/Users/ryu/Documents/test", "/Users/ryu/Documents/test")
-	csdn := platforms.NewRodCSDN()
-	csdn.SetConfig()
-	log.Println("result: ", csdn.Config)
-	// err = csdn.Login()
-	_, err := csdn.CheckAuthentication()
-	log.Println("err: ", err)
+	zhihu := platforms.NewRodZhiHu()
+	// err := zhihu.Login()
+	// fmt.Println("Login err: ", err)
 
-	// autInfo, err := csdn.CheckAuthentication()
-	// if err != nil {
-	// 	log.Fatal("err2:", err)
-	// } else {
-	// 	log.Println("autInfo:", autInfo)
-	// }
+	autInfo, err := zhihu.CheckAuthentication()
+	if err != nil {
+		log.Fatal("err2:", err)
+	} else {
+		log.Println("autInfo:", autInfo)
+	}
 	// csdn.SetArticle(&app.ArticleList[0])
 	// csdn.OpenCSDNPage("https://editor.csdn.net/md/?articleId=137137778")
 
