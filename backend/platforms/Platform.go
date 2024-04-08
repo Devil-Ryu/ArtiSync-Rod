@@ -91,9 +91,10 @@ func (m *Model) CheckConfig(config interface{}) (err error) {
 	if err != nil {
 		log.Println("配置校验失败: ", err)
 		return err
-	} else {
-		log.Println("配置校验通过")
 	}
+
+	log.Println("配置校验通过")
+
 	return nil
 }
 
@@ -124,10 +125,11 @@ func (m *Model) OpenPage(pageURL string) (err error) {
 	return nil
 }
 
+// SetConfig 加载配置(必要-需要重写)
+func (m *Model) SetConfig(foreDefault bool) (err error) { return err }
+
 // CheckAuthentication 检查授权(必要-需要重写)
-func (m *Model) CheckAuthentication() (authInfo map[string]string, err error) {
-	return authInfo, err
-}
+func (m *Model) CheckAuthentication() (authInfo map[string]string, err error) { return authInfo, err }
 
 // Login 登录(必要-需要重写)
 func (m *Model) Login() (err error) { return err }
