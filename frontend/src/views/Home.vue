@@ -59,7 +59,7 @@
                         </template>
                         <template #editor="{ index, data, field }">
                             <MultiSelect v-model="dataTable[index][field]" :maxSelectedLabels="1"
-                                :options="platformStore.platforms" optionLabel="name" optionValue="name" />
+                                :options="platformStore.platforms" optionLabel="name" optionValue="key" />
                         </template>
                     </Column>
                     <Column field="Progress" header="进度" class="w-10rem">
@@ -72,7 +72,8 @@
                             <Tag>{{ data[field] }}</Tag>
                         </template>
                         <template #filter="{ filterModel }">
-                            <MultiSelect v-model="filterModel.value" :options="statusList" optionLabel="label" optionValue="value" class="p-column-filter">
+                            <MultiSelect v-model="filterModel.value" :options="statusList" optionLabel="label"
+                                optionValue="value" class="p-column-filter">
                             </MultiSelect>
                         </template>
                     </Column>
@@ -115,6 +116,7 @@ import { usePlatformsStore, statusList } from '@/src/store/platform.js'
 import { computed, ref } from 'vue';
 import { LoadArticles, SyncSelectPlatforms, Run, GetArticlesInfo } from '@/wailsjs/go/application/ATApp'
 import { OpenPage as OpenCSDNPage } from '@/wailsjs/go/platforms/RodCSDN';
+import { OpenPage as OpenZhiHuPage } from '@/wailsjs/go/platforms/RodZhiHu';
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from 'primevue/api';
 import { EventsOn } from '@/wailsjs/runtime/runtime';
@@ -185,6 +187,8 @@ function openPage(data) {
     switch (data.Name) {
         case "CSDN":
             OpenCSDNPage(data.PublishURL)
+        case "ZhiHu":
+            OpenZhiHuPage(data.PublishURL)
     }
 }
 

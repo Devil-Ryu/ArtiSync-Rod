@@ -56,18 +56,17 @@ func (m *Model) LoadCookies() (cookies []*proto.NetworkCookieParam, err error) {
 }
 
 // LoadConfig 加载配置(必要-加载平台配置)
-func (m *Model) LoadConfig(defaultConfig map[string]interface{}) (config map[string]interface{}, err error) {
+func (m *Model) LoadConfig(defaultConfig map[string]interface{}, forceDefault bool) (config map[string]interface{}, err error) {
 	cutl := utils.NewCommonUtils()
 	configPath, err := m.RODController.GetPlatformConfigPath(m.Name)
-	log.Println("configPath:", configPath)
 	if err != nil {
 		return config, err
 	}
 
 	// 尝试加载配置文件
-	_, err = cutl.LoadJSONFile(configPath)
-	if err != nil { // 如果不存在配置文件则写入默认配置
-		// 将默认配置进行保存
+	config, err = cutl.LoadJSONFile(configPath)
+	if err != nil || forceDefault { // 如果不存在配置文件则写入默认配置
+		log.Println("加载默认配置")
 		err = cutl.SaveJSONFile(configPath, defaultConfig)
 		if err != nil {
 			return config, err
@@ -85,14 +84,15 @@ func (m *Model) LoadConfig(defaultConfig map[string]interface{}) (config map[str
 }
 
 // CheckConfig 检查config(统一方法)
-func (m *Model) CheckConfig(config interface{}, setConfigFunc func() error) (err error) {
+func (m *Model) CheckConfig(config interface{}) (err error) {
+	// 进行配置校验
 	validate := validator.New()
 	err = validate.Struct(config) // 校验config必要字段是否已有
-	if err != nil {               // 如果没有config则调用传入的方法进行设置config
-		err = setConfigFunc()
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		log.Println("配置校验失败: ", err)
+		return err
+	} else {
+		log.Println("配置校验通过")
 	}
 	return nil
 }

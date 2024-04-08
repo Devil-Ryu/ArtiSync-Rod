@@ -1,8 +1,10 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { CheckAuthentication as AuthCSDN } from "@/wailsjs/go/platforms/RodCSDN";
+import { CheckAuthentication as AuthZhiHu } from "@/wailsjs/go/platforms/RodZhiHu";
 import LOGO_CSDN from "@/src/assets/images/LOGO_CSDN.png"
 import LOGO_JIANSHU from "@/src/assets/images/LOGO_JIANSHU.png"
+import LOGO_ZHIHU from "@/src/assets/images/LOGO_ZHIHU.png"
 import LOGO_WEIXIN from "@/src/assets/images/LOGO_WEIXIN.png"
 
 export const usePlatformsStore = defineStore('platforms', () => {
@@ -13,21 +15,25 @@ export const usePlatformsStore = defineStore('platforms', () => {
   const platforms = ref([
     {
       name: 'CSDN',
+      key: 'CSDN',
       ico: LOGO_CSDN,
       isAuth: false,
-      username: "未授权",
       isChecking: false,
+      username: "未授权",
       checkAuth: AuthCSDN,
     },
     {
-      name: '简书(暂未开放)',
-      ico: LOGO_JIANSHU,
+      name: '知乎',
+      key: 'ZhiHu',
+      ico: LOGO_ZHIHU,
       isAuth: false,
       isChecking: false,
       username: "未授权",
+      checkAuth: AuthZhiHu,
     },
     {
       name: '微信公众号(暂未开放)',
+      key: '微信公众号(暂未开放)',
       ico: LOGO_WEIXIN,
       isAuth: false,
       isChecking: false,

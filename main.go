@@ -31,6 +31,7 @@ func main() {
 	cutl := utils.NewCommonUtils()               // 工具类
 	rodController := &controller.RODController{} // rod控制器
 	csdn := platforms.NewRodCSDN()               // 平台CSDN
+	zhihu := platforms.NewRodZhiHu()             // 平台CSDN
 
 	// Create application with options
 	err := wails.Run(&options.App{
@@ -70,6 +71,7 @@ func main() {
 			cutl,
 			atApp,
 			csdn,
+			zhihu,
 		},
 		// Windows platform specific options
 		Windows: &windows.Options{

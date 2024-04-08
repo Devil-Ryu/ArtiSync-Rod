@@ -2,10 +2,12 @@ package platforms
 
 import (
 	"ArtiSync-Rod/backend/controller"
+	"ArtiSync-Rod/backend/utils"
 	"context"
 	"errors"
 	"fmt"
 	"log"
+	"path"
 	"time"
 
 	"github.com/go-rod/rod"
@@ -25,19 +27,20 @@ type ConfigZhiHu struct {
 	Disabled                      bool   `json:"Disabled" `                                         // 是否禁用(有默认值的不用设置validate，否则0值会报错)
 	LoginPageURL                  string `json:"LoginPageURL" validate:"required"`                  // 登录页
 	HomePageURL                   string `json:"HomePageURL" validate:"required"`                   // 首页
-	CreateArticlePage             string `json:"CreateArticlePage" validate:"required"`             // 文章管理页
+	CreateArticlePage             string `json:"CreateArticlePage" validate:"required"`             // 创建文章页
+	ArticleManagePage             string `json:"ArticleManagePage" validate:"required"`             // 文章管理页
 	ProfilePageURL                string `json:"ProfilePageURL" validate:"required"`                // 个人页
 	LoginBoxSelector              string `json:"LoginBoxSelector" validate:"required"`              // 登录页登录box选择器
 	TitleInputSelector            string `json:"TitleInputSelector" validate:"required"`            // 标题输入选择器
 	ContentAreaSelector           string `json:"ContentAreaSelector" validate:"required"`           // 内容区域选择器
 	ImageUploadStep1Selector      string `json:"ImageUploadStep1Selector" validate:"required"`      // 图片上传选择器
 	ImageUploadStep2Selector      string `json:"ImageUploadStep2Selector" validate:"required"`      // 图片上传选择器
+	ImageUploadStep3Selector      string `json:"ImageUploadStep3Selector" validate:"required"`      // 图片上传选择器
 	UploadArticleBtnStep1Selector string `json:"UploadArticleBtnStep1Selector" validate:"required"` // 保存文章1选择器
 	UploadArticleBtnStep2Selector string `json:"UploadArticleBtnStep2Selector" validate:"required"` // 保存文章2选择器
-	SaveArticleBtnSelector        string `json:"SaveArticleBtnSelector" validate:"required"`        // 保存文章选择器
-	// ProfileIDSelector        string `json:"ProfileIDSelector" validate:"required"`        // 个人简介ID选择器
-	ProfileNameSelector   string `json:"ProfileNameSelector" validate:"required"`   // 个人简介名称选择器
-	ProfileAvatarSelector string `json:"ProfileAvatarSelector" validate:"required"` // 个人简介头像选择器
+	UploadArticleBtnStep3Selector string `json:"UploadArticleBtnStep3Selector" validate:"required"` // 保存文章3选择器
+	ProfileNameSelector           string `json:"ProfileNameSelector" validate:"required"`           // 个人简介名称选择器
+	ProfileAvatarSelector         string `json:"ProfileAvatarSelector" validate:"required"`         // 个人简介头像选择器
 }
 
 // NewRodZhiHu 初始化
@@ -46,7 +49,7 @@ func NewRodZhiHu() *RodZhiHu {
 }
 
 // SetConfig 加载配置(必要-加载平台配置)
-func (zhihu *RodZhiHu) SetConfig() (err error) {
+func (zhihu *RodZhiHu) SetConfig(foreDefault bool) (err error) {
 
 	// 默认配置
 	defaultConfig := map[string]interface{}{}
@@ -54,20 +57,22 @@ func (zhihu *RodZhiHu) SetConfig() (err error) {
 	defaultConfig["LoginPageURL"] = "https://www.zhihu.com/signin?next=%2Fpeople%2Fedit"
 	defaultConfig["HomePageURL"] = "https://www.zhihu.com/"
 	defaultConfig["CreateArticlePage"] = "https://zhuanlan.zhihu.com/write"
+	defaultConfig["ArticleManagePage"] = "https://www.zhihu.com/creator/manage/creation/draft?type=article"
 	defaultConfig["ProfilePageURL"] = "https://www.zhihu.com/people/edit"
 	defaultConfig["LoginBoxSelector"] = "#root > div > main > div > div > div > div > div.signQr-rightContainer > div > div.SignContainer-content > div > div:nth-child(1) > form > button"
 	defaultConfig["TitleInputSelector"] = "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div.css-1so3nbl > div.css-i6bazn > label > textarea"
 	defaultConfig["ContentAreaSelector"] = "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div.css-1so3nbl > div.PostEditor-wrapper > div.css-eehorp > div > div.Dropzone.Editable-content.RichText.RichText--editable.RichText--clearBoth.ztext > div > div > div > div"
 	defaultConfig["ImageUploadStep1Selector"] = "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div:nth-child(1) > div > div > div > div.mainArea.css-5jm82r > div:nth-child(4) > div > button"
-	defaultConfig["ImageUploadStep2Selector"] = "body > div:nth-child(30) > div > div > div > div.Modal.Modal--default.css-zelv4t > div > div > div > div.css-1jf2703 > div > div > input"
+	defaultConfig["ImageUploadStep2Selector"] = "body > div:nth-child(26) > div > div > div > div.Modal.Modal--default.css-zelv4t > div > div > div > div.css-1jf2703 > div > div > input"
+	defaultConfig["ImageUploadStep3Selector"] = "body > div:nth-child(26) > div > div > div > div.Modal.Modal--default.css-zelv4t > div > div > div > div.css-1jf2703 > div.css-1v0c8fj > button"
 	defaultConfig["UploadArticleBtnStep1Selector"] = "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div:nth-child(1) > div > div > div > div.fixArea.css-k008qs > div > div > button"
 	defaultConfig["UploadArticleBtnStep2Selector"] = "#Popover5-content > div > button:nth-child(1)"
-	// defaultConfig["ProfileIDSelector"] = "#base-info > div.base-info-content > div > form > ul > li:nth-child(2) > div.content-show-r"
+	defaultConfig["UploadArticleBtnStep3Selector"] = "body > div:nth-child(28) > div > div > div > div.Modal.Modal--default.Editable-docModal > div > div.Modal-content > form > input[type=file]"
 	defaultConfig["ProfileNameSelector"] = ".FullnameField-name"
 	defaultConfig["ProfileAvatarSelector"] = "#root > div > main > div > div > div.ProfileHeader-main > div.UserAvatarEditor.ProfileHeader-avatar > div > img"
 
-	// 尝试加载config配置，若不存在则将默认配置写入
-	config, err := zhihu.LoadConfig(defaultConfig)
+	// 尝试加载config配置并校验，若不存在则将默认配置写入
+	config, err := zhihu.LoadConfig(defaultConfig, foreDefault)
 	if err != nil {
 		return err
 	}
@@ -77,15 +82,24 @@ func (zhihu *RodZhiHu) SetConfig() (err error) {
 	if err != nil {
 		return fmt.Errorf("加载CSDN配置失败: %w", err)
 	}
-	log.Println("配置读取完成")
+
+	// 如果不强制使用默认配置，校验config
+	if !foreDefault {
+		err = zhihu.CheckConfig(zhihu.Config)
+		if err != nil {
+			return zhihu.SetConfig(true)
+		}
+	}
+
+	log.Println("ZhiHu配置读取完成")
 	return err
 }
 
 // Login 登录CSDN后把cookie保存到本地（重写方法）
 func (zhihu *RodZhiHu) Login() (err error) {
-	err = zhihu.CheckConfig(zhihu.Config, zhihu.SetConfig)
+	err = zhihu.SetConfig(false)
 	if err != nil {
-		return fmt.Errorf("配置检查错误: %w", err)
+		return fmt.Errorf("配置设置错误: %w", err)
 	}
 
 	// 查看当前是否有浏览器
@@ -131,9 +145,9 @@ func (zhihu *RodZhiHu) Login() (err error) {
 
 // CheckAuthentication 检查是否授权（重写方法）
 func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err error) {
-	err = zhihu.CheckConfig(zhihu.Config, zhihu.SetConfig)
+	err = zhihu.SetConfig(false)
 	if err != nil {
-		return authInfo, fmt.Errorf("配置检查错误: %w", err)
+		return authInfo, fmt.Errorf("配置设置错误: %w", err)
 	}
 
 	// 首先获取cookies
@@ -190,81 +204,83 @@ func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err er
 
 }
 
-// // RUN 运行（重写方法）
-// func (zhihu *RodZhiHu) RUN() (err error) {
-// 	log.Println("开始运行: zhihu")
+// RUN 运行（重写方法）
+func (zhihu *RodZhiHu) RUN() (err error) {
+	log.Println("开始运行: zhihu")
 
-// 	/*配置检查*/
-// 	err = zhihu.CheckConfig(zhihu.Config, zhihu.SetConfig)
-// 	if err != nil {
-// 		return fmt.Errorf("配置检查错误: %w", err)
-// 	}
+	/*配置检查*/
+	err = zhihu.SetConfig(false)
+	if err != nil {
+		return fmt.Errorf("配置设置错误: %w", err)
+	}
 
-// 	/*加载cookie*/
-// 	_, err = zhihu.LoadCookies()
-// 	if err != nil {
-// 		zhihu.Article.Status = utils.PublishedFailed
-// 		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
-// 		return err
-// 	}
-// 	zhihu.Article.Status = utils.Publishing
+	/*加载cookie*/
+	_, err = zhihu.LoadCookies()
+	if err != nil {
+		zhihu.Article.Status = utils.PublishedFailed
+		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+		return err
+	}
+	zhihu.Article.Status = utils.Publishing
 
-// 	/*设置浏览器*/
-// 	if zhihu.RODController.Browser == nil {
-// 		zhihu.RODController.StartBrowser(true) // 启动浏览器
-// 	}
-// 	// 确认浏览器关闭
-// 	defer zhihu.RODController.CloseBrowser()
+	/*设置浏览器*/
+	if zhihu.RODController.Browser == nil {
+		zhihu.RODController.StartBrowser(false) // 启动浏览器
+	}
+	// 确认浏览器关闭
+	defer zhihu.RODController.CloseBrowser()
 
-// 	/*设置浏览器cookies*/
-// 	err = zhihu.RODController.Browser.SetCookies(zhihu.Cookies)
-// 	if err != nil {
-// 		zhihu.Article.Status = utils.PublishedFailed
-// 		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
-// 		return err
-// 	}
+	/*设置浏览器cookies*/
+	err = zhihu.RODController.Browser.SetCookies(zhihu.Cookies)
+	if err != nil {
+		zhihu.Article.Status = utils.PublishedFailed
+		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+		return err
+	}
 
-// 	/*创建文章*/
-// 	page := zhihu.RODController.Browser.MustPage(zhihu.Config.HomePageURL)                               // 导航到首页
-// 	page.MustElement(zhihu.Config.CreateArticleBtnSelector).MustClick()                                  // 光标移动到发布文章按钮
-// 	contentAreaEl := page.MustElement(zhihu.Config.ContentAreaSelector)                                  // 定位内容区域
-// 	zhihu.clearContent(contentAreaEl)                                                                    // 清除现有输入区内容
-// 	page.MustElement(zhihu.Config.TitleInputSelector).MustSelectAllText().MustInput(zhihu.Article.Title) // 输入文章标题
+	/*创建文章*/
+	page := zhihu.RODController.Browser.MustPage(zhihu.Config.CreateArticlePage) // 导航到写文章页
 
-// 	/*上传图片*/
-// 	for index, imageInfo := range zhihu.Article.MarkdownTool.ImagesInfo { // 遍历图片列表，上传图片
-// 		imagePath := path.Join(zhihu.Article.MarkdownTool.ImagePath, imageInfo.URL)
-// 		uploadURL, err := zhihu.uploadImage(page, imagePath)
-// 		if err != nil {
-// 			zhihu.Article.Status = utils.PublishedFailed
-// 			runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
-// 			return err
-// 		}
-// 		zhihu.Article.MarkdownTool.ImagesInfo[index].UploadURL = uploadURL
-// 		zhihu.UpdatePlatformInfo()
-// 	}
-// 	/*替换图片*/
-// 	zhihu.Article.MarkdownTool.ReplaceImages()
-// 	savePath, err := zhihu.Article.MarkdownTool.SaveToMarkdown() // 保存到本地
-// 	if err != nil {
-// 		zhihu.Article.Status = utils.PublishedFailed
-// 		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
-// 		return fmt.Errorf("保存Markdown失败: %w", err)
-// 	}
-// 	/*上传文章*/
-// 	page.MustElement(zhihu.Config.UploadArticleBtnSelector).MustSetFiles(savePath) // 导入本地文章
+	/*上传图片*/
+	for index, imageInfo := range zhihu.Article.MarkdownTool.ImagesInfo { // 遍历图片列表，上传图片
+		imagePath := path.Join(zhihu.Article.MarkdownTool.ImagePath, imageInfo.URL)
+		uploadURL, err := zhihu.uploadImage(page, imagePath)
+		if err != nil {
+			zhihu.Article.Status = utils.PublishedFailed
+			runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+			return err
+		}
+		zhihu.Article.MarkdownTool.ImagesInfo[index].UploadURL = uploadURL
+		zhihu.UpdatePlatformInfo()
+	}
+	/*替换图片*/
+	zhihu.Article.MarkdownTool.ReplaceImages()
+	/*保存替换图片后的文章到本地*/
+	savePath, err := zhihu.Article.MarkdownTool.SaveToMarkdown()
+	if err != nil {
+		zhihu.Article.Status = utils.PublishedFailed
+		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+		return fmt.Errorf("保存Markdown失败: %w", err)
+	}
+	/*上传文章*/
+	page.MustElement(zhihu.Config.UploadArticleBtnStep1Selector).MustClick()                             // 点击导入文章按钮
+	page.MustElement(zhihu.Config.UploadArticleBtnStep2Selector).MustClick()                             // 点击导入文章按钮
+	page.MustWaitStable().MustElement(zhihu.Config.UploadArticleBtnStep3Selector).MustSetFiles(savePath) // 导入本地文章
 
-// 	zhihu.UpdatePlatformInfo()
-// 	page.MustElement(zhihu.Config.SaveArticleBtnSelector).MustClick() // 点击保存
+	/*设置文章标题*/
+	page.MustElement(zhihu.Config.TitleInputSelector).MustSelectAllText().MustInput(zhihu.Article.Title)
 
-// 	zhihu.Article.Status = utils.PublishedSuccess
-// 	// 获取URL并更新
-// 	zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].PublishURL = zhihu.Config.ArticleManagePage
-// 	runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+	zhihu.UpdatePlatformInfo()
 
-// 	return nil
+	zhihu.Article.Status = utils.PublishedSuccess
+	// 获取URL并更新
+	zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].PublishURL = zhihu.Config.ArticleManagePage
+	runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+	page.MustWaitStable()
 
-// }
+	return nil
+
+}
 
 // UpdatePlatformInfo 更新平台上传进度(默认进度包括图片上传，文件上传的步骤)(TODO 解决Progress为int的问题0)
 func (zhihu *RodZhiHu) UpdatePlatformInfo() {
@@ -287,30 +303,34 @@ func (zhihu *RodZhiHu) UpdatePlatformInfo() {
 // clearContent 清除内容
 func (zhihu *RodZhiHu) clearContent(element *rod.Element) {
 	// 找到所有的输入
-	subEls := element.MustElementsX(".//div")
+	subEls := element.MustElementsX("//div[contains(@class, 'css-5sjb75')]")
+	log.Println("subEls: ", len(subEls))
 
 	// 清空输入区
 	for _, subEl := range subEls {
-		subEl.Remove()
+		subEl.MustClick()
 	}
 }
 
 // UploadImage 上传图片
-// func (zhihu *RodZhiHu) uploadImage(page *rod.Page, imagePath string) (uploadURL string, err error) {
-// 	contentAreaEl := page.MustElement(zhihu.Config.ContentAreaSelector) // 定位内容区域
-// 	// 访问上传图片页面
-// 	page.MustElement(zhihu.Config.ImageUploadStep1Selector).MustClick()
-// 	page.MustWaitStable().MustElement(zhihu.Config.ImageUploadStep2Selector).MustSetFiles(imagePath).WaitInvisible()
+func (zhihu *RodZhiHu) uploadImage(page *rod.Page, imagePath string) (uploadURL string, err error) {
+	contentAreaEl := page.MustElement(zhihu.Config.ContentAreaSelector) // 定位内容区域
+	// 访问上传图片页面
+	page.MustElement(zhihu.Config.ImageUploadStep1Selector).MustClick()
+	page.MustWaitStable().MustElement(zhihu.Config.ImageUploadStep2Selector).MustSetFiles(imagePath)
+	page.MustWaitStable().MustElement(zhihu.Config.ImageUploadStep3Selector).MustClick()
 
-// 	// 获取图片元素
-// 	imgEl, err := contentAreaEl.MustWaitStable().ElementX("*//img")
-// 	if err != nil {
-// 		return uploadURL, err
-// 	}
-// 	// 获取图片链接
-// 	uploadURL = *imgEl.MustAttribute("src")
-// 	fmt.Println("uploadUrl: ", uploadURL)
-// 	// 获得链接后清除内容
-// 	zhihu.clearContent(contentAreaEl)
-// 	return uploadURL, nil
-// }
+	// 获取图片元素
+	imgEl, err := contentAreaEl.MustWaitStable().ElementX("*//img")
+
+	if err != nil {
+		return uploadURL, err
+	}
+	// 获取图片链接
+
+	uploadURL = *imgEl.MustAttribute("src")
+	fmt.Println("uploadUrl: ", uploadURL)
+	// 获得链接后清除内容
+	zhihu.clearContent(contentAreaEl)
+	return uploadURL, nil
+}

@@ -48,7 +48,7 @@ func NewRodCSDN() *RodCSDN {
 }
 
 // SetConfig 加载配置(必要-加载平台配置)
-func (csdn *RodCSDN) SetConfig() (err error) {
+func (csdn *RodCSDN) SetConfig(foreDefault bool) (err error) {
 
 	// 默认配置
 	defaultConfig := map[string]interface{}{}
@@ -70,7 +70,7 @@ func (csdn *RodCSDN) SetConfig() (err error) {
 	defaultConfig["ProfileAvatarSelector"] = ".avatar-hover > img:nth-child(1)"
 
 	// 尝试加载config配置，若不存在则将默认配置写入
-	config, err := csdn.LoadConfig(defaultConfig)
+	config, err := csdn.LoadConfig(defaultConfig, foreDefault)
 	if err != nil {
 		return err
 	}
@@ -80,15 +80,24 @@ func (csdn *RodCSDN) SetConfig() (err error) {
 	if err != nil {
 		return fmt.Errorf("加载CSDN配置失败: %w", err)
 	}
+
+	// 如果不强制使用默认配置，校验config
+	if !foreDefault {
+		err = csdn.CheckConfig(csdn.Config)
+		if err != nil {
+			return csdn.SetConfig(true)
+		}
+	}
+
 	log.Println("CSDN配置读取完成")
 	return err
 }
 
 // Login 登录CSDN后把cookie保存到本地（重写方法）
 func (csdn *RodCSDN) Login() (err error) {
-	err = csdn.CheckConfig(csdn.Config, csdn.SetConfig)
+	err = csdn.SetConfig(false)
 	if err != nil {
-		return fmt.Errorf("配置检查错误: %w", err)
+		return fmt.Errorf("配置设置错误: %w", err)
 	}
 
 	// 查看当前是否有浏览器
@@ -134,9 +143,9 @@ func (csdn *RodCSDN) Login() (err error) {
 
 // CheckAuthentication 检查是否授权（重写方法）
 func (csdn *RodCSDN) CheckAuthentication() (authInfo map[string]string, err error) {
-	err = csdn.CheckConfig(csdn.Config, csdn.SetConfig)
+	err = csdn.SetConfig(false)
 	if err != nil {
-		return authInfo, fmt.Errorf("配置检查错误: %w", err)
+		return authInfo, fmt.Errorf("配置设置错误: %w", err)
 	}
 
 	// 首先获取cookies
@@ -206,9 +215,9 @@ func (csdn *RodCSDN) RUN() (err error) {
 	log.Println("开始运行: CSDN")
 
 	/*配置检查*/
-	err = csdn.CheckConfig(csdn.Config, csdn.SetConfig)
+	err = csdn.SetConfig(false)
 	if err != nil {
-		return fmt.Errorf("配置检查错误: %w", err)
+		return fmt.Errorf("配置设置错误: %w", err)
 	}
 
 	/*加载cookie*/

@@ -96,6 +96,14 @@ func (at *ATApp) runPlatform(platformName string, platformIndex int, article *ut
 			return err
 		}
 		fmt.Println("CSDN Done")
+	case "ZhiHu":
+		bot := platforms.NewRodZhiHu()
+		bot.Init(at.Ctx, article, platformIndex)
+		err = bot.RUN()
+		if err != nil {
+			return err
+		}
+
 	}
 
 	return nil
@@ -107,8 +115,11 @@ func (at *ATApp) Run() (err error) {
 
 	// 遍历文章
 	for index := range at.ArticleList {
+		fmt.Println("文章: ", at.ArticleList[index].Title)
 		// 遍历平台
 		for platformIndex, platforName := range at.ArticleList[index].SelectPlatforms {
+
+			fmt.Println("平台: ", platforName)
 			err = at.runPlatform(platforName, platformIndex, &at.ArticleList[index])
 			if err != nil {
 				return err

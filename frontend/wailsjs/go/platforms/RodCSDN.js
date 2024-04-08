@@ -6,16 +6,16 @@ export function CheckAuthentication() {
   return window['go']['platforms']['RodCSDN']['CheckAuthentication']();
 }
 
-export function CheckConfig(arg1, arg2) {
-  return window['go']['platforms']['RodCSDN']['CheckConfig'](arg1, arg2);
+export function CheckConfig(arg1) {
+  return window['go']['platforms']['RodCSDN']['CheckConfig'](arg1);
 }
 
 export function Init(arg1, arg2, arg3) {
   return window['go']['platforms']['RodCSDN']['Init'](arg1, arg2, arg3);
 }
 
-export function LoadConfig(arg1) {
-  return window['go']['platforms']['RodCSDN']['LoadConfig'](arg1);
+export function LoadConfig(arg1, arg2) {
+  return window['go']['platforms']['RodCSDN']['LoadConfig'](arg1, arg2);
 }
 
 export function LoadCookies() {
@@ -38,8 +38,8 @@ export function Run() {
   return window['go']['platforms']['RodCSDN']['Run']();
 }
 
-export function SetConfig() {
-  return window['go']['platforms']['RodCSDN']['SetConfig']();
+export function SetConfig(arg1) {
+  return window['go']['platforms']['RodCSDN']['SetConfig'](arg1);
 }
 
 export function SetCookies(arg1) {
