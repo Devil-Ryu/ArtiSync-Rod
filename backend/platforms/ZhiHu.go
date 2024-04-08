@@ -145,7 +145,7 @@ func (zhihu *RodZhiHu) Login() (err error) {
 
 // CheckAuthentication 检查是否授权（重写方法）
 func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err error) {
-	err = zhihu.SetConfig(false)
+	err = zhihu.SetConfig(true)
 	if err != nil {
 		return authInfo, fmt.Errorf("配置设置错误: %w", err)
 	}
@@ -209,7 +209,7 @@ func (zhihu *RodZhiHu) RUN() (err error) {
 	log.Println("开始运行: zhihu")
 
 	/*配置检查*/
-	err = zhihu.SetConfig(false)
+	err = zhihu.SetConfig(true)
 	if err != nil {
 		return fmt.Errorf("配置设置错误: %w", err)
 	}
