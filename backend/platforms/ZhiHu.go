@@ -145,7 +145,7 @@ func (zhihu *RodZhiHu) Login() (err error) {
 
 // CheckAuthentication 检查是否授权（重写方法）
 func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err error) {
-	err = zhihu.SetConfig(true)
+	err = zhihu.SetConfig(false)
 	if err != nil {
 		return authInfo, fmt.Errorf("配置设置错误: %w", err)
 	}
@@ -158,7 +158,7 @@ func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err er
 
 	/*设置浏览器*/
 	if zhihu.RODController.Browser == nil {
-		zhihu.RODController.StartBrowser(false) // 启动浏览器
+		zhihu.RODController.StartBrowser(true) // 启动浏览器
 	}
 
 	// 确认浏览器关闭
@@ -209,7 +209,7 @@ func (zhihu *RodZhiHu) RUN() (err error) {
 	log.Println("开始运行: zhihu")
 
 	/*配置检查*/
-	err = zhihu.SetConfig(true)
+	err = zhihu.SetConfig(false)
 	if err != nil {
 		return fmt.Errorf("配置设置错误: %w", err)
 	}
@@ -225,7 +225,7 @@ func (zhihu *RodZhiHu) RUN() (err error) {
 
 	/*设置浏览器*/
 	if zhihu.RODController.Browser == nil {
-		zhihu.RODController.StartBrowser(false) // 启动浏览器
+		zhihu.RODController.StartBrowser(true) // 启动浏览器
 	}
 	// 确认浏览器关闭
 	defer zhihu.RODController.CloseBrowser()
