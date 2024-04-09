@@ -12,6 +12,13 @@ require (
 )
 
 require (
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/mattn/go-sqlite3 v1.14.17 // indirect
+	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
+)
+
+require (
 	github.com/bep/debounce v1.2.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -48,6 +55,7 @@ require (
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+	gorm.io/driver/sqlite v1.5.5
 )
 
 // replace github.com/wailsapp/wails/v2 v2.8.0 => /Users/ryu/go/pkg/mod
