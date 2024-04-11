@@ -54,6 +54,22 @@ func (m *Model) HasAccount() bool {
 	return m.Account != nil
 }
 
+// Start 启动平台(必要-需要重写)
+func (m *Model) Start(dbc *controller.DBController, rdc *controller.RODController, config interface{}, account db.Account, article *utils.Article, publishFunc func() error) (err error) {
+	err = m.InitRod(dbc, rdc, &config) // 初始化机器人
+	if err != nil {
+		return err
+	}
+	m.SetAccount(&account) // 设置账号信息
+	m.SetArticle(article)  // 设置文章信息
+	err = publishFunc()    // 发布文章
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // InitRod 初始化Rod
 func (m *Model) InitRod(dbc *controller.DBController, rdc *controller.RODController, config interface{}) (err error) {
 	// 设置controller

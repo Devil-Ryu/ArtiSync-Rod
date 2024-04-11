@@ -81,9 +81,9 @@ func (c *CommonUtils) GetConfigDir() (dir string, err error) {
 	if err != nil {
 		return dir, fmt.Errorf("获取用户配置目录失败: %w", err)
 	}
-	configPath := filepath.Join(dir, "ArtiSync-Rod")
+	configDir := filepath.Join(dir, "ArtiSync-Rod")
 
-	err = os.Mkdir(configPath, 0755)
+	err = os.Mkdir(configDir, 0755)
 
 	// 当不是文件存在错误的时候则抛出错误
 	// 忽略文件夹存在错误
@@ -94,7 +94,7 @@ func (c *CommonUtils) GetConfigDir() (dir string, err error) {
 		return "", err
 	}
 
-	return configPath, err
+	return configDir, err
 }
 
 // GetConfigFilePath 获取配置文件

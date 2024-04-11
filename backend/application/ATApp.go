@@ -1,18 +1,23 @@
 package application
 
 import (
+	"ArtiSync-Rod/backend/controller"
+	"ArtiSync-Rod/backend/db"
 	"ArtiSync-Rod/backend/platforms"
 	"ArtiSync-Rod/backend/utils"
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path"
 )
 
 // ATApp App
 type ATApp struct {
-	Ctx         context.Context
-	ArticleList []utils.Article
+	Ctx           context.Context
+	DBController  *controller.DBController  // 数据库控制器
+	RODController *controller.RODController // 机器人控制器
+	ArticleList   []utils.Article
 }
 
 // NewATApp 构造方法
@@ -23,6 +28,44 @@ func NewATApp() *ATApp {
 // StartUp 设置context
 func (at *ATApp) StartUp(ctx context.Context) {
 	at.Ctx = ctx
+}
+
+// InitConfig 初始化配置
+func (at *ATApp) InitConfig() (err error) {
+
+	if at.HasController() == false {
+		return fmt.Errorf("控制器未设置")
+	}
+
+	// 获取配置目录
+	cutl := utils.NewCommonUtils()
+	configDir, err := cutl.GetConfigDir()
+	if err != nil {
+		return err
+	}
+
+	// 连接数据库
+	dbPath := path.Join(configDir, "artisync.db")
+	err = at.DBController.Connect(dbPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetController 设置控制器
+func (at *ATApp) SetController(dbController *controller.DBController, rodController *controller.RODController) {
+	at.DBController = dbController
+	at.RODController = rodController
+}
+
+// HasController 是否设置控制器
+func (at *ATApp) HasController() bool {
+	if at.DBController == nil || at.RODController == nil {
+		return false
+	}
+	return true
 }
 
 // LoadArticles 加载文章
@@ -86,45 +129,52 @@ func (at *ATApp) genPlatformsInfo() {
 	}
 }
 
-func (at *ATApp) runPlatform(platformName string, platformIndex int, article *utils.Article) (err error) {
-	switch platformName {
-	case "CSDN":
-		bot := platforms.NewRodCSDN()
-		bot.Init(at.Ctx, article, platformIndex)
-		err = bot.RUN()
-		if err != nil {
-			return err
-		}
-		fmt.Println("CSDN Done")
-	case "ZhiHu":
-		bot := platforms.NewRodZhiHu()
-		bot.Init(at.Ctx, article, platformIndex)
-		err = bot.RUN()
-		if err != nil {
-			return err
-		}
+func (at *ATApp) publishToAccount(account db.Account, article *utils.Article) (err error) {
+	// 获取平台Key
+	platormKey := account.PlatformKey
 
+	// 选择对应平台
+	switch platormKey {
+	case "CSDN":
+		platform := platforms.NewRodCSDN()
+		err = platform.Start(at.DBController, at.RODController, &platform.Config, account, article, platform.Publish) // 实例化机器人
+		if err != nil {
+			return err
+		}
+	case "ZhiHu":
+		platform := platforms.NewRodZhiHu()
+		err = platform.Start(at.DBController, at.RODController, &platform.Config, account, article, platform.Publish) // 实例化机器人
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-// Run Run
-func (at *ATApp) Run() (err error) {
+// Publish 发布文章
+func (at *ATApp) Publish() (err error) {
 	at.genPlatformsInfo() // 生成要上传的平台的基础信息
+
+	// 获取启用的账号信息
+	accountcs, err := at.DBController.QueryAccounts(map[string]interface{}{"Disabled": false})
+	log.Println("账号数量: ", len(accountcs))
+	if err != nil {
+		return err
+	}
 
 	// 遍历文章
 	for index := range at.ArticleList {
 		fmt.Println("文章: ", at.ArticleList[index].Title)
-		// 遍历平台
-		for platformIndex, platforName := range at.ArticleList[index].SelectPlatforms {
-
-			fmt.Println("平台: ", platforName)
-			err = at.runPlatform(platforName, platformIndex, &at.ArticleList[index])
+		// 遍历账号
+		for _, account := range accountcs {
+			fmt.Println("账号: ", account)
+			err = at.publishToAccount(account, &at.ArticleList[index])
 			if err != nil {
 				return err
 			}
 		}
+
 	}
 
 	return nil

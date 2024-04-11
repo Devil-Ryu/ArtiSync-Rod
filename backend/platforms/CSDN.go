@@ -163,6 +163,7 @@ func (csdn *RodCSDN) Login() (err error) {
 
 // Publish 发布文章（重写方法）
 func (csdn *RodCSDN) Publish() (err error) {
+	log.Println("开始发布文章")
 	// 检查基础配置
 	err = csdn.CheckConfig(csdn.Config)
 	if err != nil {
