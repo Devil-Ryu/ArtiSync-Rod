@@ -2,6 +2,7 @@ package platforms
 
 import (
 	"ArtiSync-Rod/backend/controller"
+	"ArtiSync-Rod/backend/db"
 	"ArtiSync-Rod/backend/utils"
 	"context"
 	"errors"
@@ -12,14 +13,12 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
-	"github.com/mitchellh/mapstructure"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // RodZhiHu ZhiHu 机器人
 type RodZhiHu struct {
 	*Model
-	Config ConfigZhiHu // 配置
+	Config *ConfigZhiHu // 配置
 }
 
 // ConfigZhiHu 配置文件
@@ -45,78 +44,32 @@ type ConfigZhiHu struct {
 
 // NewRodZhiHu 初始化
 func NewRodZhiHu() *RodZhiHu {
-	return &RodZhiHu{Model: &Model{Name: "ZhiHu", RODController: &controller.RODController{CheckTime: 1}}}
-}
-
-// SetConfig 加载配置(必要-加载平台配置)
-func (zhihu *RodZhiHu) SetConfig(foreDefault bool) (err error) {
-
-	// 默认配置
-	defaultConfig := map[string]interface{}{}
-	defaultConfig["Disabled"] = false
-	defaultConfig["LoginPageURL"] = "https://www.zhihu.com/signin?next=%2Fpeople%2Fedit"
-	defaultConfig["HomePageURL"] = "https://www.zhihu.com/"
-	defaultConfig["CreateArticlePage"] = "https://zhuanlan.zhihu.com/write"
-	defaultConfig["ArticleManagePage"] = "https://www.zhihu.com/creator/manage/creation/draft?type=article"
-	defaultConfig["ProfilePageURL"] = "https://www.zhihu.com/people/edit"
-	defaultConfig["LoginBoxSelector"] = "#root > div > main > div > div > div > div > div.signQr-rightContainer > div > div.SignContainer-content > div > div:nth-child(1) > form > button"
-	defaultConfig["TitleInputSelector"] = "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div.css-1so3nbl > div.css-i6bazn > label > textarea"
-	defaultConfig["ContentAreaSelector"] = "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div.css-1so3nbl > div.PostEditor-wrapper > div.css-eehorp > div > div.Dropzone.Editable-content.RichText.RichText--editable.RichText--clearBoth.ztext > div > div > div > div"
-	defaultConfig["ImageUploadStep1Selector"] = "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div:nth-child(1) > div > div > div > div.mainArea.css-5jm82r > div:nth-child(4) > div > button"
-	defaultConfig["ImageUploadStep2Selector"] = "body > div:nth-child(26) > div > div > div > div.Modal.Modal--default.css-zelv4t > div > div > div > div.css-1jf2703 > div > div > input"
-	defaultConfig["ImageUploadStep3Selector"] = "body > div:nth-child(26) > div > div > div > div.Modal.Modal--default.css-zelv4t > div > div > div > div.css-1jf2703 > div.css-1v0c8fj > button"
-	defaultConfig["UploadArticleBtnStep1Selector"] = "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div:nth-child(1) > div > div > div > div.fixArea.css-k008qs > div > div > button"
-	defaultConfig["UploadArticleBtnStep2Selector"] = "#Popover5-content > div > button:nth-child(1)"
-	defaultConfig["UploadArticleBtnStep3Selector"] = "body > div:nth-child(28) > div > div > div > div.Modal.Modal--default.Editable-docModal > div > div.Modal-content > form > input[type=file]"
-	defaultConfig["ProfileNameSelector"] = ".FullnameField-name"
-	defaultConfig["ProfileAvatarSelector"] = "#root > div > main > div > div > div.ProfileHeader-main > div.UserAvatarEditor.ProfileHeader-avatar > div > img"
-
-	// 尝试加载config配置并校验，若不存在则将默认配置写入
-	config, err := zhihu.LoadConfig(defaultConfig, foreDefault)
-	if err != nil {
-		return err
-	}
-
-	// 将配置读取到结构体中
-	err = mapstructure.Decode(config, &zhihu.Config)
-	if err != nil {
-		return fmt.Errorf("加载CSDN配置失败: %w", err)
-	}
-
-	// 如果不强制使用默认配置，校验config
-	if !foreDefault {
-		err = zhihu.CheckConfig(zhihu.Config)
-		if err != nil {
-			return zhihu.SetConfig(true)
-		}
-	}
-
-	log.Println("ZhiHu配置读取完成")
-	return err
+	return &RodZhiHu{Model: &Model{Key: "ZhiHu", Alias: "知乎"}}
 }
 
 // Login 登录CSDN后把cookie保存到本地（重写方法）
 func (zhihu *RodZhiHu) Login() (err error) {
-	err = zhihu.SetConfig(false)
+	// 检查基础配置
+	err = zhihu.CheckConfig(zhihu.Config)
 	if err != nil {
-		return fmt.Errorf("配置设置错误: %w", err)
+		return err
 	}
 
-	// 查看当前是否有浏览器
-	if zhihu.RODController.Browser == nil {
-		zhihu.RODController.StartBrowser(false)
-	}
+	// 打开一个新的浏览器用作登录
+	rdc := controller.NewRODController()
+	rdc.StartBrowser(false) // 显示浏览器
 	// 确认浏览器关闭
-	defer zhihu.RODController.CloseBrowser()
+	defer rdc.CloseBrowser()
 
 	var loginCookies []*proto.NetworkCookie
 	// 访问登录页面
-	zhihu.RODController.Browser.MustPage(zhihu.Config.LoginPageURL)
+	rdc.Browser.MustPage(zhihu.Config.LoginPageURL)
+	fmt.Println("zhihu.Config.LoginPageURL", zhihu.Config.LoginPageURL)
 
 	// 监听是否登录成功
 	for {
-		time.Sleep(time.Duration(zhihu.RODController.CheckTime) * time.Second) // 监听频率
-		pages, _ := zhihu.RODController.Browser.Pages()
+		time.Sleep(time.Duration(rdc.CheckTime) * time.Second) // 监听频率
+		pages, _ := rdc.Browser.Pages()
 		log.Println("当前页面数: ", len(pages), " , 登录状态: 等待登录")
 		// 如果页面全部关闭，则推出
 		if len(pages) == 0 {
@@ -127,12 +80,17 @@ func (zhihu *RodZhiHu) Login() (err error) {
 			if err == nil && targetPage.MustInfo().URL == zhihu.Config.HomePageURL {
 				log.Println("当前页面数: ", len(pages), " , 登录状态: 登录成功")
 				loginCookies = targetPage.MustCookies() // 获取cookie，终止监听
-				// 保存coookie
-				cookiePath, err := zhihu.RODController.GetCookiePath(zhihu.Name)
-				if err != nil {
-					break
-				}
-				zhihu.RODController.SaveCookies(loginCookies, cookiePath)
+
+				cookieParams := proto.CookiesToParams(loginCookies)
+
+				// 存入数据库
+				zhihu.DBController.CreateOrUpdateAccounts([]db.Account{{
+					PlatformKey:   zhihu.Key,
+					PlatformAlias: zhihu.Alias,
+					Username:      "", // 手动登录的默认没有
+					LoginType:     "", // 手动登录的默认没有
+					Password:      "", // 手动登录的默认没有
+					Cookies:       cookieParams}})
 				break
 			} else {
 
@@ -145,20 +103,20 @@ func (zhihu *RodZhiHu) Login() (err error) {
 
 // CheckAuthentication 检查是否授权（重写方法）
 func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err error) {
-	err = zhihu.SetConfig(false)
+	// 检查基础配置
+	err = zhihu.CheckConfig(zhihu.Config)
 	if err != nil {
-		return authInfo, fmt.Errorf("配置设置错误: %w", err)
+		return authInfo, err
 	}
 
-	// 首先获取cookies
-	_, err = zhihu.LoadCookies()
-	if err != nil {
-		return authInfo, fmt.Errorf("加载Cookie失败: %w", err)
+	// 确认是否有账号
+	if zhihu.HasAccount() == false {
+		return authInfo, fmt.Errorf(zhihu.Alias + "账号未设置")
 	}
 
 	/*设置浏览器*/
 	if zhihu.RODController.Browser == nil {
-		zhihu.RODController.StartBrowser(true) // 启动浏览器
+		zhihu.RODController.StartBrowser(false) // 启动浏览器，无头模式
 	}
 
 	// 确认浏览器关闭
@@ -166,7 +124,7 @@ func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err er
 
 	profileURL := zhihu.Config.ProfilePageURL
 
-	zhihu.RODController.Browser.SetCookies(zhihu.Cookies)
+	zhihu.RODController.Browser.SetCookies(zhihu.Account.Cookies)
 	page := zhihu.RODController.Browser.MustPage()
 
 	// 导航到页面，判断是否超时
@@ -193,9 +151,8 @@ func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err er
 			return
 		}
 		authInfo = map[string]string{
-			"ID":     "",
-			"name":   name,
-			"avater": "",
+			"ID":   "",
+			"name": name,
 		}
 	}).MustDo()
 
@@ -204,37 +161,41 @@ func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err er
 
 }
 
-// RUN 运行（重写方法）
-func (zhihu *RodZhiHu) RUN() (err error) {
-	log.Println("开始运行: zhihu")
+// Publish 发布文章（重写方法）
+func (zhihu *RodZhiHu) Publish() (err error) {
+	log.Println("开始运行: " + zhihu.Alias)
 
-	/*配置检查*/
-	err = zhihu.SetConfig(false)
-	if err != nil {
-		return fmt.Errorf("配置设置错误: %w", err)
-	}
-
-	/*加载cookie*/
-	_, err = zhihu.LoadCookies()
+	// 检查基础配置
+	err = zhihu.CheckConfig(zhihu.Config)
 	if err != nil {
 		zhihu.Article.Status = utils.PublishedFailed
-		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 		return err
+	}
+
+	// 检查是否有文章
+	if zhihu.Article == nil {
+		return fmt.Errorf("文章未设置")
+	}
+
+	// 确认是否有账号
+	if zhihu.HasAccount() == false {
+		zhihu.Article.Status = utils.PublishedFailed
+		return fmt.Errorf(zhihu.Alias + "账号未设置")
 	}
 	zhihu.Article.Status = utils.Publishing
 
 	/*设置浏览器*/
 	if zhihu.RODController.Browser == nil {
-		zhihu.RODController.StartBrowser(true) // 启动浏览器
+		zhihu.RODController.StartBrowser(false) // 启动浏览器
 	}
 	// 确认浏览器关闭
 	defer zhihu.RODController.CloseBrowser()
 
 	/*设置浏览器cookies*/
-	err = zhihu.RODController.Browser.SetCookies(zhihu.Cookies)
+	err = zhihu.RODController.Browser.SetCookies(zhihu.Account.Cookies)
 	if err != nil {
 		zhihu.Article.Status = utils.PublishedFailed
-		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+		// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 		return err
 	}
 
@@ -247,7 +208,7 @@ func (zhihu *RodZhiHu) RUN() (err error) {
 		uploadURL, err := zhihu.uploadImage(page, imagePath)
 		if err != nil {
 			zhihu.Article.Status = utils.PublishedFailed
-			runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+			// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 			return err
 		}
 		zhihu.Article.MarkdownTool.ImagesInfo[index].UploadURL = uploadURL
@@ -259,7 +220,7 @@ func (zhihu *RodZhiHu) RUN() (err error) {
 	savePath, err := zhihu.Article.MarkdownTool.SaveToMarkdown()
 	if err != nil {
 		zhihu.Article.Status = utils.PublishedFailed
-		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+		// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 		return fmt.Errorf("保存Markdown失败: %w", err)
 	}
 	/*上传文章*/
@@ -274,8 +235,8 @@ func (zhihu *RodZhiHu) RUN() (err error) {
 
 	zhihu.Article.Status = utils.PublishedSuccess
 	// 获取URL并更新
-	zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].PublishURL = zhihu.Config.ArticleManagePage
-	runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+	// zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].PublishURL = zhihu.Config.ArticleManagePage
+	// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 	page.MustWaitStable()
 
 	return nil
@@ -286,17 +247,17 @@ func (zhihu *RodZhiHu) RUN() (err error) {
 func (zhihu *RodZhiHu) UpdatePlatformInfo() {
 
 	// 更新文章中平台上传的进度
-	zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].StepCount++
-	zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].Progress = float32(zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].StepCount) / float32(len(zhihu.Article.MarkdownTool.ImagesInfo)+1) * 100 // +1是因为后面还有一个上传文章
+	// zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].StepCount++
+	// zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].Progress = float32(zhihu.Article.PlatformsInfo[ZhiHu.PlatformIndex].StepCount) / float32(len(ZhiHu.Article.MarkdownTool.ImagesInfo)+1) * 100 // +1是因为后面还有一个上传文章
 
-	// 更新文章总上传进度
+	// // 更新文章总上传进度
 	zhihu.Article.Progress = 0
 	for _, platformInfo := range zhihu.Article.PlatformsInfo {
 		zhihu.Article.Progress += platformInfo.Progress
 	}
 	zhihu.Article.Progress = zhihu.Article.Progress / float32(len(zhihu.Article.PlatformsInfo))
 
-	runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+	// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 }
 
 /****************************自定义函数区****************************/

@@ -2,6 +2,7 @@ package platforms
 
 import (
 	"ArtiSync-Rod/backend/controller"
+	"ArtiSync-Rod/backend/db"
 	"ArtiSync-Rod/backend/utils"
 	"context"
 	"errors"
@@ -12,14 +13,12 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
-	"github.com/mitchellh/mapstructure"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // RodCSDN CSDN机器人
 type RodCSDN struct {
 	*Model
-	Config ConfigCSDN // 配置
+	Config *ConfigCSDN // 配置
 }
 
 // ConfigCSDN 配置文件
@@ -44,119 +43,25 @@ type ConfigCSDN struct {
 
 // NewRodCSDN 初始化
 func NewRodCSDN() *RodCSDN {
-	return &RodCSDN{Model: &Model{Name: "CSDN", RODController: &controller.RODController{CheckTime: 1}}}
-}
-
-// SetConfig 加载配置(必要-加载平台配置)
-func (csdn *RodCSDN) SetConfig(foreDefault bool) (err error) {
-
-	// 默认配置
-	defaultConfig := map[string]interface{}{}
-	defaultConfig["Disabled"] = false
-	defaultConfig["LoginPageURL"] = "https://passport.csdn.net/login?code=applets"
-	defaultConfig["HomePageURL"] = "https://www.csdn.net"
-	defaultConfig["ArticleManagePage"] = "https://mp.csdn.net/mp_blog/manage/article"
-	defaultConfig["ProfilePageURL"] = "https://i.csdn.net/#/user-center/profile"
-	defaultConfig["LoginBoxSelector"] = "body > div.passport-container > div > div.passport-main > div.login-box"
-	defaultConfig["CreateArticleBtnSelector"] = "div.toolbar-btn:nth-child(6) > a:nth-child(1)"
-	defaultConfig["TitleInputSelector"] = "body > div.app.app--light > div.layout > div.layout__panel.layout__panel--articletitle-bar > div > div.article-bar__input-box > input"
-	defaultConfig["ContentAreaSelector"] = "body > div.app.app--light > div.layout > div.layout__panel.flex.flex--row > div > div.layout__panel.flex.flex--row > div.layout__panel.layout__panel--editor > div.editor > pre"
-	defaultConfig["ImageUploadStep1Selector"] = "body > div.app.app--light > div.layout > div.layout__panel.flex.flex--row > div > div.layout__panel.layout__panel--navigation-bar.clearfix > nav > div.scroll-box > div:nth-child(1) > div:nth-child(14) > button"
-	defaultConfig["ImageUploadStep2Selector"] = "#pane-upimg > div.upimg-cont > div > input[type=file]"
-	defaultConfig["SaveArticleBtnSelector"] = "body > div.app.app--light > div.layout > div.layout__panel.layout__panel--articletitle-bar > div > div.article-bar__user-box.flex.flex--row > button.btn.btn-save"
-	defaultConfig["UploadArticleBtnSelector"] = "#import-markdown-file-input"
-	defaultConfig["ProfileIDSelector"] = "#base-info > div.base-info-content > div > form > ul > li:nth-child(2) > div.content-show-r"
-	defaultConfig["ProfileNameSelector"] = ".el-form > ul:nth-child(1) > li:nth-child(1) > div:nth-child(2)"
-	defaultConfig["ProfileAvatarSelector"] = ".avatar-hover > img:nth-child(1)"
-
-	// 尝试加载config配置，若不存在则将默认配置写入
-	config, err := csdn.LoadConfig(defaultConfig, foreDefault)
-	if err != nil {
-		return err
-	}
-
-	// 将配置读取到结构体中
-	err = mapstructure.Decode(config, &csdn.Config)
-	if err != nil {
-		return fmt.Errorf("加载CSDN配置失败: %w", err)
-	}
-
-	// 如果不强制使用默认配置，校验config
-	if !foreDefault {
-		err = csdn.CheckConfig(csdn.Config)
-		if err != nil {
-			return csdn.SetConfig(true)
-		}
-	}
-
-	log.Println("CSDN配置读取完成")
-	return err
-}
-
-// Login 登录CSDN后把cookie保存到本地（重写方法）
-func (csdn *RodCSDN) Login() (err error) {
-	err = csdn.SetConfig(false)
-	if err != nil {
-		return fmt.Errorf("配置设置错误: %w", err)
-	}
-
-	// 查看当前是否有浏览器
-	if csdn.RODController.Browser == nil {
-		csdn.RODController.StartBrowser(false)
-	}
-	// 确认浏览器关闭
-	defer csdn.RODController.CloseBrowser()
-
-	var loginCookies []*proto.NetworkCookie
-	// 访问登录页面
-	csdn.RODController.Browser.MustPage(csdn.Config.LoginPageURL)
-
-	// 监听是否登录成功
-	for {
-		time.Sleep(time.Duration(csdn.RODController.CheckTime) * time.Second) // 监听频率
-		pages, _ := csdn.RODController.Browser.Pages()
-		log.Println("当前页面数: ", len(pages), " , 登录状态: 等待登录")
-		// 如果页面全部关闭，则推出
-		if len(pages) == 0 {
-			log.Println("当前页面数: ", len(pages), " , 登录状态: 取消登录")
-			break
-		} else {
-			targetPage, err := pages.FindByURL(csdn.Config.HomePageURL)
-			if err == nil {
-				log.Println("当前页面数: ", len(pages), " , 登录状态: 登录成功")
-				loginCookies = targetPage.MustCookies() // 获取cookie，终止监听
-				// 保存coookie
-				cookiePath, err := csdn.RODController.GetCookiePath(csdn.Name)
-				if err != nil {
-					break
-				}
-				csdn.RODController.SaveCookies(loginCookies, cookiePath)
-				break
-			} else {
-
-			}
-		}
-	}
-
-	return err
+	return &RodCSDN{Model: &Model{Key: "CSDN", Alias: "CSDN"}}
 }
 
 // CheckAuthentication 检查是否授权（重写方法）
 func (csdn *RodCSDN) CheckAuthentication() (authInfo map[string]string, err error) {
-	err = csdn.SetConfig(false)
+	// 检查基础配置
+	err = csdn.CheckConfig(csdn.Config)
 	if err != nil {
-		return authInfo, fmt.Errorf("配置设置错误: %w", err)
+		return authInfo, err
 	}
 
-	// 首先获取cookies
-	_, err = csdn.LoadCookies()
-	if err != nil {
-		return authInfo, fmt.Errorf("加载Cookie失败: %w", err)
+	// 确认是否有账号
+	if csdn.HasAccount() == false {
+		return authInfo, fmt.Errorf(csdn.Alias + "账号未设置")
 	}
 
 	/*设置浏览器*/
 	if csdn.RODController.Browser == nil {
-		csdn.RODController.StartBrowser(true) // 启动浏览器
+		csdn.RODController.StartBrowser(false) // 启动浏览器，无头模式
 	}
 
 	// 确认浏览器关闭
@@ -164,7 +69,7 @@ func (csdn *RodCSDN) CheckAuthentication() (authInfo map[string]string, err erro
 
 	profileURL := csdn.Config.ProfilePageURL
 
-	csdn.RODController.Browser.SetCookies(csdn.Cookies)
+	csdn.RODController.Browser.SetCookies(csdn.Account.Cookies)
 	page := csdn.RODController.Browser.MustPage()
 
 	// 导航到页面，判断是否超时
@@ -193,54 +98,103 @@ func (csdn *RodCSDN) CheckAuthentication() (authInfo map[string]string, err erro
 			err = fmt.Errorf("获取ID失败: %w", err)
 			return
 		}
-		avater, err := page.MustElement(csdn.Config.ProfileAvatarSelector).Attribute("src")
-		if err != nil {
-			err = fmt.Errorf("获取avater失败: %w", err)
-			return
-		}
 		authInfo = map[string]string{
-			"ID":     ID,
-			"name":   name,
-			"avater": *avater,
+			"ID":   ID,
+			"name": name,
 		}
 	}).MustDo()
 
 	log.Println(authInfo)
-	return authInfo, nil
-
+	return authInfo, err
 }
 
-// RUN 运行（重写方法）
-func (csdn *RodCSDN) RUN() (err error) {
-	log.Println("开始运行: CSDN")
-
-	/*配置检查*/
-	err = csdn.SetConfig(false)
+// Login 登录CSDN后把cookie保存到本地（重写方法）
+func (csdn *RodCSDN) Login() (err error) {
+	// 检查基础配置
+	err = csdn.CheckConfig(csdn.Config)
 	if err != nil {
-		return fmt.Errorf("配置设置错误: %w", err)
-	}
-
-	/*加载cookie*/
-	_, err = csdn.LoadCookies()
-	if err != nil {
-		csdn.Article.Status = utils.PublishedFailed
-		runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 		return err
 	}
+
+	// 打开一个新的浏览器用作登录
+	rdc := controller.NewRODController()
+	rdc.StartBrowser(false) // 显示浏览器
+
+	// 确认浏览器关闭
+	defer rdc.CloseBrowser()
+
+	var loginCookies []*proto.NetworkCookie
+	// 访问登录页面
+	rdc.Browser.MustPage(csdn.Config.LoginPageURL)
+
+	// 监听是否登录成功
+	for {
+		time.Sleep(time.Duration(rdc.CheckTime) * time.Second) // 监听频率
+		pages, _ := rdc.Browser.Pages()
+		log.Println("当前页面数: ", len(pages), " , 登录状态: 等待登录")
+		// 如果页面全部关闭，则推出
+		if len(pages) == 0 {
+			log.Println("当前页面数: ", len(pages), " , 登录状态: 取消登录")
+			break
+		} else {
+			targetPage, err := pages.FindByURL(csdn.Config.HomePageURL)
+			if err == nil {
+				log.Println("当前页面数: ", len(pages), " , 登录状态: 登录成功")
+				loginCookies = targetPage.MustCookies() // 获取cookie，终止监听
+				cookieParams := proto.CookiesToParams(loginCookies)
+
+				// 存入数据库
+				csdn.DBController.CreateOrUpdateAccounts([]db.Account{{
+					PlatformKey:   csdn.Key,
+					PlatformAlias: csdn.Alias,
+					Username:      "", // 手动登录的默认没有
+					LoginType:     "", // 手动登录的默认没有
+					Password:      "", // 手动登录的默认没有
+					Cookies:       cookieParams}})
+				break
+			} else {
+
+			}
+		}
+	}
+
+	return err
+}
+
+// Publish 发布文章（重写方法）
+func (csdn *RodCSDN) Publish() (err error) {
+	// 检查基础配置
+	err = csdn.CheckConfig(csdn.Config)
+	if err != nil {
+		csdn.Article.Status = utils.PublishedFailed
+		return err
+	}
+
+	// 检查是否有文章
+	if csdn.Article == nil {
+		return fmt.Errorf("文章未设置")
+	}
+
+	// 确认是否有账号
+	if csdn.HasAccount() == false {
+		csdn.Article.Status = utils.PublishedFailed
+		return fmt.Errorf("CSDN账号未设置")
+	}
+
 	csdn.Article.Status = utils.Publishing
 
 	/*设置浏览器*/
 	if csdn.RODController.Browser == nil {
-		csdn.RODController.StartBrowser(true) // 启动浏览器
+		csdn.RODController.StartBrowser(false) // 启动浏览器
 	}
 	// 确认浏览器关闭
 	defer csdn.RODController.CloseBrowser()
 
 	/*设置浏览器cookies*/
-	err = csdn.RODController.Browser.SetCookies(csdn.Cookies)
+	err = csdn.RODController.Browser.SetCookies(csdn.Account.Cookies)
 	if err != nil {
 		csdn.Article.Status = utils.PublishedFailed
-		runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+		// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 		return err
 	}
 
@@ -257,7 +211,7 @@ func (csdn *RodCSDN) RUN() (err error) {
 		uploadURL, err := csdn.uploadImage(page, imagePath)
 		if err != nil {
 			csdn.Article.Status = utils.PublishedFailed
-			runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+			// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 			return err
 		}
 		csdn.Article.MarkdownTool.ImagesInfo[index].UploadURL = uploadURL
@@ -268,7 +222,7 @@ func (csdn *RodCSDN) RUN() (err error) {
 	savePath, err := csdn.Article.MarkdownTool.SaveToMarkdown() // 保存到本地
 	if err != nil {
 		csdn.Article.Status = utils.PublishedFailed
-		runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+		// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 		return fmt.Errorf("保存Markdown失败: %w", err)
 	}
 	/*上传文章*/
@@ -279,8 +233,8 @@ func (csdn *RodCSDN) RUN() (err error) {
 
 	csdn.Article.Status = utils.PublishedSuccess
 	// 获取URL并更新
-	csdn.Article.PlatformsInfo[csdn.PlatformIndex].PublishURL = csdn.Config.ArticleManagePage
-	runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+	// csdn.Article.PlatformsInfo[csdn.PlatformIndex].PublishURL = csdn.Config.ArticleManagePage
+	// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 
 	return nil
 
@@ -290,8 +244,8 @@ func (csdn *RodCSDN) RUN() (err error) {
 func (csdn *RodCSDN) UpdatePlatformInfo() {
 
 	// 更新文章中平台上传的进度
-	csdn.Article.PlatformsInfo[csdn.PlatformIndex].StepCount++
-	csdn.Article.PlatformsInfo[csdn.PlatformIndex].Progress = float32(csdn.Article.PlatformsInfo[csdn.PlatformIndex].StepCount) / float32(len(csdn.Article.MarkdownTool.ImagesInfo)+1) * 100 // +1是因为后面还有一个上传文章
+	// csdn.Article.PlatformsInfo[csdn.PlatformIndex].StepCount++
+	// csdn.Article.PlatformsInfo[csdn.PlatformIndex].Progress = float32(csdn.Article.PlatformsInfo[csdn.PlatformIndex].StepCount) / float32(len(csdn.Article.MarkdownTool.ImagesInfo)+1) * 100 // +1是因为后面还有一个上传文章
 
 	// 更新文章总上传进度
 	csdn.Article.Progress = 0
@@ -300,7 +254,7 @@ func (csdn *RodCSDN) UpdatePlatformInfo() {
 	}
 	csdn.Article.Progress = csdn.Article.Progress / float32(len(csdn.Article.PlatformsInfo))
 
-	runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+	// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 }
 
 /****************************自定义函数区****************************/

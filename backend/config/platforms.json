@@ -1,0 +1,49 @@
+[
+    {
+        "Version": "v1",
+        "Key": "CSDN",
+        "Alias": "CSDN",
+        "Config": {
+            "Disabled": false,
+            "LoginPageURL": "https://passport.csdn.net/login?code=applets",
+            "HomePageURL": "https://www.csdn.net",
+            "ArticleManagePage": "https://mp.csdn.net/mp_blog/manage/article",
+            "ProfilePageURL": "https://i.csdn.net/#/user-center/profile",
+            "LoginBoxSelector": "body > div.passport-container > div > div.passport-main > div.login-box",
+            "CreateArticleBtnSelector": "div.toolbar-btn:nth-child(6) > a:nth-child(1)",
+            "TitleInputSelector": "body > div.app.app--light > div.layout > div.layout__panel.layout__panel--articletitle-bar > div > div.article-bar__input-box > input",
+            "ContentAreaSelector": "body > div.app.app--light > div.layout > div.layout__panel.flex.flex--row > div > div.layout__panel.flex.flex--row > div.layout__panel.layout__panel--editor > div.editor > pre",
+            "ImageUploadStep1Selector": "body > div.app.app--light > div.layout > div.layout__panel.flex.flex--row > div > div.layout__panel.layout__panel--navigation-bar.clearfix > nav > div.scroll-box > div:nth-child(1) > div:nth-child(14) > button",
+            "ImageUploadStep2Selector": "#pane-upimg > div.upimg-cont > div > input[type=file]",
+            "SaveArticleBtnSelector": "body > div.app.app--light > div.layout > div.layout__panel.layout__panel--articletitle-bar > div > div.article-bar__user-box.flex.flex--row > button.btn.btn-save",
+            "UploadArticleBtnSelector": "#import-markdown-file-input",
+            "ProfileIDSelector": "#base-info > div.base-info-content > div > form > ul > li:nth-child(2) > div.content-show-r",
+            "ProfileNameSelector": ".el-form > ul:nth-child(1) > li:nth-child(1) > div:nth-child(2)",
+            "ProfileAvatarSelector": ".avatar-hover > img:nth-child(1)"
+        }
+    },
+    {
+        "version": "v1",
+        "key": "ZHIHU",
+        "alias": "知乎",
+        "Config": {
+            "Disabled": false,
+            "LoginPageURL": "https://www.zhihu.com/signin",
+            "HomePageURL": "https://www.zhihu.com/",
+            "CreateArticlePage": "https://zhuanlan.zhihu.com/write",
+            "ArticleManagePage": "https://www.zhihu.com/creator/manage/creation/draft?type=article",
+            "ProfilePageURL": "https://www.zhihu.com/people/edit",
+            "LoginBoxSelector": "#root > div > main > div > div > div > div > div.signQr-rightContainer > div > div.SignContainer-content > div > div:nth-child(1) > form > button",
+            "TitleInputSelector": "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div.css-1so3nbl > div.css-i6bazn > label > textarea",
+            "ContentAreaSelector": "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div.css-1so3nbl > div.PostEditor-wrapper > div.css-eehorp > div > div.Dropzone.Editable-content.RichText.RichText--editable.RichText--clearBoth.ztext > div > div > div > div",
+            "ImageUploadStep1Selector": "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div:nth-child(1) > div > div > div > div.mainArea.css-5jm82r > div:nth-child(4) > div > button",
+            "ImageUploadStep2Selector": "body > div:nth-child(26) > div > div > div > div.Modal.Modal--default.css-zelv4t > div > div > div > div.css-1jf2703 > div > div > input",
+            "ImageUploadStep3Selector": "body > div:nth-child(26) > div > div > div > div.Modal.Modal--default.css-zelv4t > div > div > div > div.css-1jf2703 > div.css-1v0c8fj > button",
+            "UploadArticleBtnStep1Selector": "#root > div > main > div > div.WriteIndexLayout-main.WriteIndex.css-1losy9j > div:nth-child(1) > div > div > div > div.fixArea.css-k008qs > div > div > button",
+            "UploadArticleBtnStep2Selector": "#Popover5-content > div > button:nth-child(1)",
+            "UploadArticleBtnStep3Selector": "body > div:nth-child(28) > div > div > div > div.Modal.Modal--default.Editable-docModal > div > div.Modal-content > form > input[type=file]",
+            "ProfileNameSelector": ".FullnameField-name",
+            "ProfileAvatarSelector": "#root > div > main > div > div > div.ProfileHeader-main > div.UserAvatarEditor.ProfileHeader-avatar > div > img"
+        }
+    }
+]

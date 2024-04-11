@@ -164,3 +164,28 @@ func (c *CommonUtils) SaveJSONFile(fileDir string, jsonMap map[string]interface{
 	bw.Flush()
 	return nil
 }
+
+// ReadJSONFile 函数用于读取并解析指定路径的JSON文件
+func (c *CommonUtils) ReadJSONFile(filePath string) (interface{}, error) {
+	// 尝试读取文件内容
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("无法读取文件: %v", err)
+	}
+
+	// 检测文件内容是否为空
+	if len(fileContent) == 0 {
+		return nil, fmt.Errorf("文件内容为空")
+	}
+
+	// 定义用于存储解析后数据的结构体
+	var data interface{}
+
+	// 尝试解析JSON数据
+	err = json.Unmarshal(fileContent, &data)
+	if err != nil {
+		return nil, fmt.Errorf("无法解析JSON数据: %v", err)
+	}
+
+	return data, nil
+}

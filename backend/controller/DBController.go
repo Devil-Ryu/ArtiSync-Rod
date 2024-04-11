@@ -57,9 +57,186 @@ func (d *DBController) AutoMigrate() (err error) {
 	}
 
 	// 数据库迁移
-	err = d.DB.AutoMigrate(&db.Account{}, db.Settings{}, db.Platform{})
+	err = d.DB.AutoMigrate(&db.Account{}, db.Setting{}, db.Platform{})
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+// CreateOrUpdateSettings 创建或更新配置
+func (d *DBController) CreateOrUpdateSettings(settings []db.Setting) ([]db.Setting, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return settings, err
+	}
+
+	d.DB.Save(&settings)
+	return settings, nil
+}
+
+// CreateOrUpdateAccounts 创建或更新账户
+func (d *DBController) CreateOrUpdateAccounts(accounts []db.Account) ([]db.Account, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return accounts, err
+	}
+
+	d.DB.Save(&accounts)
+	return accounts, nil
+}
+
+// CreateOrUpdatePlatforms 创建或更新平台
+func (d *DBController) CreateOrUpdatePlatforms(platform []db.Platform) ([]db.Platform, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return platform, err
+	}
+
+	d.DB.Save(&platform)
+	return platform, nil
+}
+
+// QuerySettings 通过查询条件获取配置
+func (d *DBController) QuerySettings(query map[string]interface{}) ([]db.Setting, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return nil, err
+	}
+
+	var settings []db.Setting
+	result := d.DB.Where(query).Find(&settings)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return settings, nil
+}
+
+// QueryAccounts 通过查询条件获取账户
+func (d *DBController) QueryAccounts(query map[string]interface{}) ([]db.Account, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return nil, err
+	}
+
+	var accounts []db.Account
+	result := d.DB.Where(query).Find(&accounts)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return accounts, nil
+}
+
+// QueryPlatforms 通过查询条件获取平台
+func (d *DBController) QueryPlatforms(query map[string]interface{}) ([]db.Platform, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return nil, err
+	}
+
+	var platforms []db.Platform
+	result := d.DB.Where(query).Find(&platforms)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return platforms, nil
+}
+
+// GetSetting 获取单个配置
+func (d *DBController) GetSetting(setting db.Setting) (db.Setting, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return setting, err
+	}
+
+	result := d.DB.Model(&db.Setting{}).First(&setting)
+
+	if result.Error != nil {
+		return setting, result.Error
+	}
+	return setting, nil
+}
+
+// GetAccount 获取单个账户
+func (d *DBController) GetAccount(account db.Account) (db.Account, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return account, err
+	}
+
+	result := d.DB.Model(&db.Account{}).First(&account)
+	if result.Error != nil {
+		return account, result.Error
+	}
+	return account, nil
+}
+
+// GetPlatform 获取单个平台
+func (d *DBController) GetPlatform(platform db.Platform) (db.Platform, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return platform, err
+	}
+
+	result := d.DB.Model(&db.Platform{}).First(&platform)
+	if result.Error != nil {
+		return platform, result.Error
+	}
+	return platform, nil
+}
+
+// DeleteSetting 删除配置
+func (d *DBController) DeleteSetting(setting db.Setting) error {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return err
+	}
+
+	result := d.DB.Delete(&setting)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// DeleteAccount 删除账户
+func (d *DBController) DeleteAccount(account db.Account) error {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return err
+	}
+
+	result := d.DB.Delete(&account)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// DeletePlatform 删除平台
+func (d *DBController) DeletePlatform(platform db.Platform) error {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return err
+	}
+
+	result := d.DB.Delete(&platform)
+	if result.Error != nil {
+		return result.Error
 	}
 	return nil
 }
