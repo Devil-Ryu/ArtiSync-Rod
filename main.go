@@ -26,15 +26,33 @@ var icon []byte
 
 func main() {
 	// Create an instance of the app structure
+	var err error
+
+	/***创建控制器***/
+	dbc := controller.NewDBController()  // 创建数据库连接
+	rdc := controller.NewRODController() // 创建ROD控制器
+
+	/***创建平台实例**/
+	csdn := platforms.NewRodCSDN()   // 平台CSDN
+	zhihu := platforms.NewRodZhiHu() // 平台CSDN
+
+	/***创建App实例**/
 	app := NewApp()
-	atApp := application.NewATApp()              // 文章APp
-	cutl := utils.NewCommonUtils()               // 工具类
-	rodController := &controller.RODController{} // rod控制器
-	csdn := platforms.NewRodCSDN()               // 平台CSDN
-	zhihu := platforms.NewRodZhiHu()             // 平台CSDN
+
+	/***创建文章App实例**/
+	atApp := application.NewATApp()                // 文章APP
+	atApp.SetController(dbc, rdc)                  // 设置文章APP控制器
+	atApp.SetPlatforms([]interface{}{csdn, zhihu}) // 设置文章APP平台
+	err = atApp.InitConfig()                       // 初始化文章APP配置
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/***创建工具类**/
+	cutl := utils.NewCommonUtils() // 工具类
 
 	// Create application with options
-	err := wails.Run(&options.App{
+	err = wails.Run(&options.App{
 		Title:     "ArtiSync-Rod",
 		Width:     1024,
 		Height:    768,
@@ -67,9 +85,10 @@ func main() {
 		WindowStartState: options.Normal,
 		Bind: []interface{}{
 			app,
-			rodController,
-			cutl,
 			atApp,
+			rdc,
+			dbc,
+			cutl,
 			csdn,
 			zhihu,
 		},

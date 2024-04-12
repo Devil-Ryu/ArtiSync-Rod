@@ -6,15 +6,19 @@ import (
 	"ArtiSync-Rod/backend/platforms"
 	"ArtiSync-Rod/backend/utils"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 // ATApp App
 type ATApp struct {
 	Ctx           context.Context
+	Platforms     []interface{}             // 平台
 	DBController  *controller.DBController  // 数据库控制器
 	RODController *controller.RODController // 机器人控制器
 	ArticleList   []utils.Article
@@ -28,6 +32,28 @@ func NewATApp() *ATApp {
 // StartUp 设置context
 func (at *ATApp) StartUp(ctx context.Context) {
 	at.Ctx = ctx
+}
+
+// RefreshPlatforms 刷新平台
+func (at *ATApp) RefreshPlatforms() (err error) {
+	if at.HasController() == false {
+		return fmt.Errorf("控制器未设置")
+	}
+
+	// 遍历平台，实例化平台控制器
+	for _, param := range at.Platforms {
+		switch platform := param.(type) {
+		case *platforms.RodCSDN:
+			log.Println("初始化CSDN平台")
+			platform.InitRod(at.DBController, at.RODController, &platform.Config)
+		case *platforms.RodZhiHu:
+			log.Println("初始化知乎平台")
+			platform.InitRod(at.DBController, at.RODController, &platform.Config)
+		default:
+			return fmt.Errorf("未知平台类型: %v", platform)
+		}
+	}
+	return nil
 }
 
 // InitConfig 初始化配置
@@ -51,6 +77,12 @@ func (at *ATApp) InitConfig() (err error) {
 		return err
 	}
 
+	// 刷新平台
+	err = at.RefreshPlatforms()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -58,6 +90,11 @@ func (at *ATApp) InitConfig() (err error) {
 func (at *ATApp) SetController(dbController *controller.DBController, rodController *controller.RODController) {
 	at.DBController = dbController
 	at.RODController = rodController
+}
+
+// SetPlatforms 设置平台
+func (at *ATApp) SetPlatforms(platforms []interface{}) {
+	at.Platforms = platforms
 }
 
 // HasController 是否设置控制器
@@ -110,6 +147,40 @@ func (at *ATApp) SyncSelectPlatforms(data []utils.Article) {
 	for i := 0; i < len(data); i++ {
 		at.ArticleList[i].SelectPlatforms = data[i].SelectPlatforms
 	}
+}
+
+// SyncPlatformsInfoFromRemote 同步平台信息(必要-统一方法)
+func (at *ATApp) SyncPlatformsInfoFromRemote(remoteURL string) (err error) {
+	// 下载链接文件
+	content, err := utils.DownloadFile(remoteURL)
+	if err != nil {
+		return err
+	}
+
+	// 解析链接文件
+	var data interface{}
+	err = json.Unmarshal(content, &data)
+	if err != nil {
+		return err
+	}
+
+	var platforms []db.Platform
+	err = mapstructure.Decode(data, &platforms)
+	if err != nil {
+		return fmt.Errorf("配置解码失败: %w", err)
+	}
+
+	// 保存平台信息到数据库
+	if at.HasController() == false { // 如果没有数据库控制器则返回错误
+		return fmt.Errorf("数据库控制器未设置")
+	}
+	_, err = at.DBController.CreatePlatforms(platforms)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 // GetArticlesInfo 获取文章信息

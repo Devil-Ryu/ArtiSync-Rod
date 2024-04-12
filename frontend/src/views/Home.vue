@@ -59,7 +59,7 @@
                         </template>
                         <template #editor="{ index, data, field }">
                             <MultiSelect v-model="dataTable[index][field]" :maxSelectedLabels="1"
-                                :options="platformStore.platforms" optionLabel="name" optionValue="key" />
+                                :options="platformStore.platforms" optionLabel="Alias" optionValue="Key" />
                         </template>
                     </Column>
                     <Column field="Progress" header="进度" class="w-10rem">
@@ -114,7 +114,7 @@
 <script setup>
 import { usePlatformsStore, statusList } from '@/src/store/platform.js'
 import { computed, ref } from 'vue';
-import { LoadArticles, SyncSelectPlatforms, Run, GetArticlesInfo } from '@/wailsjs/go/application/ATApp'
+import { LoadArticles, SyncSelectPlatforms, Publish, GetArticlesInfo } from '@/wailsjs/go/application/ATApp'
 import { OpenPage as OpenCSDNPage } from '@/wailsjs/go/platforms/RodCSDN';
 import { OpenPage as OpenZhiHuPage } from '@/wailsjs/go/platforms/RodZhiHu';
 import { useToast } from "primevue/usetoast";
@@ -170,7 +170,7 @@ function load() {
 
 function start() {
     SyncSelectPlatforms(dataTable.value).then(result => {
-        Run().catch(err => {
+        Publish().catch(err => {
             console.log("err: ", err)
         })
     })

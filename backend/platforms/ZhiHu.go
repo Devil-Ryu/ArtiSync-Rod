@@ -47,12 +47,12 @@ func NewRodZhiHu() *RodZhiHu {
 	return &RodZhiHu{Model: &Model{Key: "ZhiHu", Alias: "知乎"}}
 }
 
-// Login 登录CSDN后把cookie保存到本地（重写方法）
-func (zhihu *RodZhiHu) Login() (err error) {
+// Login 登录CSDN后把cookie保存到数据库（重写方法）
+func (zhihu *RodZhiHu) Login() (accounts []db.Account, err error) {
 	// 检查基础配置
 	err = zhihu.CheckConfig(zhihu.Config)
 	if err != nil {
-		return err
+		return accounts, err
 	}
 
 	// 打开一个新的浏览器用作登录
@@ -83,22 +83,31 @@ func (zhihu *RodZhiHu) Login() (err error) {
 
 				cookieParams := proto.CookiesToParams(loginCookies)
 
+				// 获取登录信息
+				zhihu.SetAccount(&db.Account{Cookies: cookieParams})
+				autInfo, err := zhihu.CheckAuthentication()
+				if err != nil {
+					return accounts, err
+				}
+
 				// 存入数据库
-				zhihu.DBController.CreateOrUpdateAccounts([]db.Account{{
+				accounts, err = zhihu.DBController.CreateAccounts([]db.Account{{
 					PlatformKey:   zhihu.Key,
 					PlatformAlias: zhihu.Alias,
-					Username:      "", // 手动登录的默认没有
-					LoginType:     "", // 手动登录的默认没有
-					Password:      "", // 手动登录的默认没有
+					Username:      autInfo["name"], // 手动登录的默认没有
+					LoginType:     "AUTU_1",        // 手动登录的默认没有
+					Password:      "",              // 手动登录的默认没有
 					Cookies:       cookieParams}})
+				if err != nil {
+					return accounts, err
+				}
+				zhihu.SetAccount(nil) // 清空缓存
 				break
-			} else {
-
 			}
 		}
 	}
 
-	return err
+	return accounts, err
 }
 
 // CheckAuthentication 检查是否授权（重写方法）
@@ -116,7 +125,7 @@ func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err er
 
 	/*设置浏览器*/
 	if zhihu.RODController.Browser == nil {
-		zhihu.RODController.StartBrowser(false) // 启动浏览器，无头模式
+		zhihu.RODController.StartBrowser(true) // 启动浏览器，无头模式
 	}
 
 	// 确认浏览器关闭

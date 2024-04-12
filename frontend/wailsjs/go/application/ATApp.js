@@ -6,16 +6,40 @@ export function GetArticlesInfo() {
   return window['go']['application']['ATApp']['GetArticlesInfo']();
 }
 
+export function HasController() {
+  return window['go']['application']['ATApp']['HasController']();
+}
+
+export function InitConfig() {
+  return window['go']['application']['ATApp']['InitConfig']();
+}
+
 export function LoadArticles(arg1, arg2) {
   return window['go']['application']['ATApp']['LoadArticles'](arg1, arg2);
 }
 
-export function Run() {
-  return window['go']['application']['ATApp']['Run']();
+export function Publish() {
+  return window['go']['application']['ATApp']['Publish']();
+}
+
+export function RefreshPlatforms() {
+  return window['go']['application']['ATApp']['RefreshPlatforms']();
+}
+
+export function SetController(arg1, arg2) {
+  return window['go']['application']['ATApp']['SetController'](arg1, arg2);
+}
+
+export function SetPlatforms(arg1) {
+  return window['go']['application']['ATApp']['SetPlatforms'](arg1);
 }
 
 export function StartUp(arg1) {
   return window['go']['application']['ATApp']['StartUp'](arg1);
+}
+
+export function SyncPlatformsInfoFromRemote(arg1) {
+  return window['go']['application']['ATApp']['SyncPlatformsInfoFromRemote'](arg1);
 }
 
 export function SyncSelectPlatforms(arg1) {

@@ -22,6 +22,10 @@ export function OpenFile(arg1) {
   return window['go']['utils']['CommonUtils']['OpenFile'](arg1);
 }
 
+export function ReadJSONFile(arg1) {
+  return window['go']['utils']['CommonUtils']['ReadJSONFile'](arg1);
+}
+
 export function SaveJSONFile(arg1, arg2) {
   return window['go']['utils']['CommonUtils']['SaveJSONFile'](arg1, arg2);
 }

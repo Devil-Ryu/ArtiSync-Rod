@@ -104,20 +104,6 @@ func (m *Model) LoadConfig() (config map[string]interface{}, err error) {
 	return config, err
 }
 
-// // SyncConfig 同步配置(必要-同步平台配置)
-// func (m *Model) SyncConfig(config map[string]interface{}) (err error) {
-// 	if m.HasDBController() == false { // 如果没有数据库控制器则返回错误
-// 		return fmt.Errorf("SyncConfig: 没有数据库控制器")
-// 	}
-// 	platformInfo, err := m.DBController.GetPlatform(db.Platform{Key: m.Key}) // 获取平台信息
-// 	if err != nil {                                                          // 如果获取失败则返回错误
-// 		return err
-// 	}
-// 	platformInfo.Config = config // 更新配置
-// 	err = m.DBController.UpdatePlatform(platformInfo) // 写入数据库
-// 	return err
-// }
-
 // OpenPage 打开页面(必要-统一方法)
 func (m *Model) OpenPage(pageURL string) (err error) {
 
@@ -172,7 +158,7 @@ func (m *Model) CheckConfig(config interface{}) (err error) {
 func (m *Model) CheckAuthentication() (authInfo map[string]string, err error) { return authInfo, err }
 
 // Login 登录(必要-需要重写)
-func (m *Model) Login() (err error) { return err }
+func (m *Model) Login() (accounts []db.Account, err error) { return accounts, err }
 
 // Publish 平台运行方法(必要-需要重写)
 func (m *Model) Publish() (err error) { return err }

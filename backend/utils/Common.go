@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	sysruntime "runtime"
@@ -188,4 +190,25 @@ func (c *CommonUtils) ReadJSONFile(filePath string) (interface{}, error) {
 	}
 
 	return data, nil
+}
+
+// DownloadFile 下载图片
+func DownloadFile(downloadURL string) ([]byte, error) {
+	// 请求链接
+	response, err := http.Get(downloadURL)
+	if err != nil {
+		err = fmt.Errorf("网络请求错误: %w", err)
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	respBytes, err := io.ReadAll(response.Body)
+	if err != nil {
+		err = fmt.Errorf("读取网络响应错误: %w", err)
+		return nil, err
+	}
+
+	// 关闭连接
+
+	return respBytes, nil
 }

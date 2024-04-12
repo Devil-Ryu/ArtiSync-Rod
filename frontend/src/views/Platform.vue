@@ -53,8 +53,6 @@ import { ref, computed } from 'vue';
 import { usePlatformsStore } from '@/src/store/platform.js'
 import { Login as LoginCSDN } from '@/wailsjs/go/platforms/RodCSDN';
 import { Login as LoginZhiHu } from '@/wailsjs/go/platforms/RodZhiHu';
-import { GetPlatformConfigPath } from '@/wailsjs/go/controller/RODController';
-import { LoadJSONFile, SaveJSONFile } from '@/wailsjs/go/utils/CommonUtils'
 import { useToast } from "primevue/usetoast";
 
 
@@ -92,28 +90,28 @@ const toggle = (event, index) => {
     menuRefArr.value[index].toggle(event)
 };
 
-function getPlatformConfig(platformKey) {
-    curFocusMenu.value = platformKey  // 设置焦点
-    GetPlatformConfigPath(platformKey).then(filePath => {
-        LoadJSONFile(filePath).then(configInfo => {
-            platformConfig.value = configInfo
-            platformConfigDialogVisble.value = true
-        }).catch(err => {
-            toast.add({ severity: 'error', summary: err, group: 'platform', life: 6000 })
-        })
-    })
-}
+// function getPlatformConfig(platformKey) {
+//     curFocusMenu.value = platformKey  // 设置焦点
+//     GetPlatformConfigPath(platformKey).then(filePath => {
+//         LoadJSONFile(filePath).then(configInfo => {
+//             platformConfig.value = configInfo
+//             platformConfigDialogVisble.value = true
+//         }).catch(err => {
+//             toast.add({ severity: 'error', summary: err, group: 'platform', life: 6000 })
+//         })
+//     })
+// }
 
-function savePlatformConfig(platformKey) {
-    GetPlatformConfigPath(platformKey).then(filePath => {
-        SaveJSONFile(filePath, platformConfig.value).then(() => {
-            platformConfigDialogVisble.value = false
-            toast.add({ severity: 'success', summary: "保存成功", group: 'platform', life: 1000 })
-        }).catch(err => {
-            toast.add({ severity: 'error', summary: err, group: 'platform', life: 6000 })
-        })
-    })
+// function savePlatformConfig(platformKey) {
+//     GetPlatformConfigPath(platformKey).then(filePath => {
+//         SaveJSONFile(filePath, platformConfig.value).then(() => {
+//             platformConfigDialogVisble.value = false
+//             toast.add({ severity: 'success', summary: "保存成功", group: 'platform', life: 1000 })
+//         }).catch(err => {
+//             toast.add({ severity: 'error', summary: err, group: 'platform', life: 6000 })
+//         })
+//     })
 
-}
+// }
 
 </script>

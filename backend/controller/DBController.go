@@ -64,40 +64,94 @@ func (d *DBController) AutoMigrate() (err error) {
 	return nil
 }
 
-// CreateOrUpdateSettings 创建或更新配置
-func (d *DBController) CreateOrUpdateSettings(settings []db.Setting) ([]db.Setting, error) {
+// CreateSettings 创建配置
+func (d *DBController) CreateSettings(settings []db.Setting) ([]db.Setting, error) {
 	// 检查数据库连接
 	err := d.CheckConnect()
 	if err != nil {
 		return settings, err
 	}
 
-	d.DB.Save(&settings)
+	result := d.DB.Create(&settings)
+	if result.Error != nil {
+		return settings, result.Error
+	}
 	return settings, nil
 }
 
-// CreateOrUpdateAccounts 创建或更新账户
-func (d *DBController) CreateOrUpdateAccounts(accounts []db.Account) ([]db.Account, error) {
+// CreateAccounts 创建账户
+func (d *DBController) CreateAccounts(accounts []db.Account) ([]db.Account, error) {
 	// 检查数据库连接
 	err := d.CheckConnect()
 	if err != nil {
 		return accounts, err
 	}
 
-	d.DB.Save(&accounts)
+	result := d.DB.Create(&accounts)
+	if result.Error != nil {
+		return accounts, result.Error
+	}
 	return accounts, nil
 }
 
-// CreateOrUpdatePlatforms 创建或更新平台
-func (d *DBController) CreateOrUpdatePlatforms(platform []db.Platform) ([]db.Platform, error) {
+// CreatePlatforms 创建平台
+func (d *DBController) CreatePlatforms(platform []db.Platform) ([]db.Platform, error) {
 	// 检查数据库连接
 	err := d.CheckConnect()
 	if err != nil {
 		return platform, err
 	}
 
-	d.DB.Save(&platform)
+	result := d.DB.Create(&platform)
+	if result.Error != nil {
+		return platform, result.Error
+	}
 	return platform, nil
+}
+
+// UpdateSetting 更新配置
+func (d *DBController) UpdateSetting(setting db.Setting) error {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return err
+	}
+
+	result := d.DB.Save(&setting)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// UpdateAccount 更新账户
+func (d *DBController) UpdateAccount(account db.Account) (db.Account, error) {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return account, err
+	}
+
+	result := d.DB.Save(&account)
+	if result.Error != nil {
+		return account, result.Error
+	}
+	return account, nil
+}
+
+// UpdatePlatform 更新平台
+func (d *DBController) UpdatePlatform(platform db.Platform) error {
+	// 检查数据库连接
+	err := d.CheckConnect()
+	if err != nil {
+		return err
+	}
+
+	result := d.DB.Save(&platform)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
 }
 
 // QuerySettings 通过查询条件获取配置

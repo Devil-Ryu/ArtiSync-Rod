@@ -61,7 +61,7 @@ func (csdn *RodCSDN) CheckAuthentication() (authInfo map[string]string, err erro
 
 	/*设置浏览器*/
 	if csdn.RODController.Browser == nil {
-		csdn.RODController.StartBrowser(false) // 启动浏览器，无头模式
+		csdn.RODController.StartBrowser(true) // 启动浏览器，无头模式
 	}
 
 	// 确认浏览器关闭
@@ -109,11 +109,11 @@ func (csdn *RodCSDN) CheckAuthentication() (authInfo map[string]string, err erro
 }
 
 // Login 登录CSDN后把cookie保存到本地（重写方法）
-func (csdn *RodCSDN) Login() (err error) {
+func (csdn *RodCSDN) Login() (accounts []db.Account, err error) {
 	// 检查基础配置
 	err = csdn.CheckConfig(csdn.Config)
 	if err != nil {
-		return err
+		return accounts, err
 	}
 
 	// 打开一个新的浏览器用作登录
@@ -143,22 +143,31 @@ func (csdn *RodCSDN) Login() (err error) {
 				loginCookies = targetPage.MustCookies() // 获取cookie，终止监听
 				cookieParams := proto.CookiesToParams(loginCookies)
 
+				// 获取登录信息
+				csdn.SetAccount(&db.Account{Cookies: cookieParams})
+				autInfo, err := csdn.CheckAuthentication()
+				if err != nil {
+					return accounts, err
+				}
+
 				// 存入数据库
-				csdn.DBController.CreateOrUpdateAccounts([]db.Account{{
+				accounts, err = csdn.DBController.CreateAccounts([]db.Account{{
 					PlatformKey:   csdn.Key,
 					PlatformAlias: csdn.Alias,
-					Username:      "", // 手动登录的默认没有
-					LoginType:     "", // 手动登录的默认没有
-					Password:      "", // 手动登录的默认没有
+					Username:      autInfo["name"], // 手动登录的默认没有
+					LoginType:     "AUTU_1",        // 手动登录的默认没有
+					Password:      "",              // 手动登录的默认没有
 					Cookies:       cookieParams}})
+				if err != nil {
+					return accounts, err
+				}
+				csdn.SetAccount(nil) // 清空缓存
 				break
-			} else {
-
 			}
 		}
 	}
 
-	return err
+	return accounts, err
 }
 
 // Publish 发布文章（重写方法）

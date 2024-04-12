@@ -41,6 +41,11 @@ const items = ref([
         route: '/platform'
     },
     {
+        label: '账户',
+        icon: 'pi pi-user',
+        route: '/accounts'
+    },
+    {
         label: '配置',
         icon: 'pi pi-cog',
         route: '/config'
@@ -51,7 +56,7 @@ const items = ref([
 
 onMounted(() => {
     // 进行全平台认证检查
-    platformStore.CheckAllAuth()
+    // platformStore.CheckAllAuth()
 })
 
 

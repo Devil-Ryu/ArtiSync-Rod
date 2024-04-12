@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { CheckAuthentication as AuthCSDN } from "@/wailsjs/go/platforms/RodCSDN";
-import { CheckAuthentication as AuthZhiHu } from "@/wailsjs/go/platforms/RodZhiHu";
+import { CheckAuthentication as AuthCSDN, Login as LoginCSDN } from "@/wailsjs/go/platforms/RodCSDN";
+import { CheckAuthentication as AuthZhiHu, Login as LoginZhiHu } from "@/wailsjs/go/platforms/RodZhiHu";
 import LOGO_CSDN from "@/src/assets/images/LOGO_CSDN.png"
 import LOGO_JIANSHU from "@/src/assets/images/LOGO_JIANSHU.png"
 import LOGO_ZHIHU from "@/src/assets/images/LOGO_ZHIHU.png"
@@ -14,26 +14,28 @@ export const usePlatformsStore = defineStore('platforms', () => {
 
   const platforms = ref([
     {
-      name: 'CSDN',
-      key: 'CSDN',
+      Key: 'CSDN',
+      Alias: 'CSDN',
       ico: LOGO_CSDN,
       isAuth: false,
       isChecking: false,
       username: "未授权",
       checkAuth: AuthCSDN,
+      login: LoginCSDN,
     },
     {
-      name: '知乎',
-      key: 'ZhiHu',
+      Key: 'ZhiHu',
+      Alias: '知乎',
       ico: LOGO_ZHIHU,
       isAuth: false,
       isChecking: false,
       username: "未授权",
       checkAuth: AuthZhiHu,
+      login: LoginZhiHu,
     },
     {
-      name: '微信公众号(暂未开放)',
-      key: '微信公众号(暂未开放)',
+      Key: 'WeiXin',
+      Alias: '微信公众号(暂未开放)',
       ico: LOGO_WEIXIN,
       isAuth: false,
       isChecking: false,

@@ -10,16 +10,24 @@ export function CheckConfig(arg1) {
   return window['go']['platforms']['RodCSDN']['CheckConfig'](arg1);
 }
 
-export function Init(arg1, arg2, arg3) {
-  return window['go']['platforms']['RodCSDN']['Init'](arg1, arg2, arg3);
+export function HasAccount() {
+  return window['go']['platforms']['RodCSDN']['HasAccount']();
 }
 
-export function LoadConfig(arg1, arg2) {
-  return window['go']['platforms']['RodCSDN']['LoadConfig'](arg1, arg2);
+export function HasDBController() {
+  return window['go']['platforms']['RodCSDN']['HasDBController']();
 }
 
-export function LoadCookies() {
-  return window['go']['platforms']['RodCSDN']['LoadCookies']();
+export function HasRODController() {
+  return window['go']['platforms']['RodCSDN']['HasRODController']();
+}
+
+export function InitRod(arg1, arg2, arg3) {
+  return window['go']['platforms']['RodCSDN']['InitRod'](arg1, arg2, arg3);
+}
+
+export function LoadConfig() {
+  return window['go']['platforms']['RodCSDN']['LoadConfig']();
 }
 
 export function Login() {
@@ -30,20 +38,24 @@ export function OpenPage(arg1) {
   return window['go']['platforms']['RodCSDN']['OpenPage'](arg1);
 }
 
-export function RUN() {
-  return window['go']['platforms']['RodCSDN']['RUN']();
+export function Publish() {
+  return window['go']['platforms']['RodCSDN']['Publish']();
 }
 
-export function Run() {
-  return window['go']['platforms']['RodCSDN']['Run']();
+export function SetAccount(arg1) {
+  return window['go']['platforms']['RodCSDN']['SetAccount'](arg1);
 }
 
-export function SetConfig(arg1) {
-  return window['go']['platforms']['RodCSDN']['SetConfig'](arg1);
+export function SetArticle(arg1) {
+  return window['go']['platforms']['RodCSDN']['SetArticle'](arg1);
 }
 
-export function SetCookies(arg1) {
-  return window['go']['platforms']['RodCSDN']['SetCookies'](arg1);
+export function SetController(arg1, arg2) {
+  return window['go']['platforms']['RodCSDN']['SetController'](arg1, arg2);
+}
+
+export function Start(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['platforms']['RodCSDN']['Start'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 export function UpdatePlatformInfo() {

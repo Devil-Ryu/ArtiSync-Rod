@@ -12,6 +12,8 @@ export function OpenDir(arg1:string):Promise<string>;
 
 export function OpenFile(arg1:string):Promise<string>;
 
+export function ReadJSONFile(arg1:string):Promise<any>;
+
 export function SaveJSONFile(arg1:string,arg2:{[key: string]: any}):Promise<void>;
 
 export function SetContext(arg1:context.Context):Promise<void>;
