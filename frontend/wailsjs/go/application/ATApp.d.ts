@@ -24,4 +24,6 @@ export function StartUp(arg1:context.Context):Promise<void>;
 
 export function SyncPlatformsInfoFromRemote(arg1:string):Promise<void>;
 
-export function SyncSelectPlatforms(arg1:Array<utils.Article>):Promise<void>;
+export function SyncSelectAccounts(arg1:Array<utils.Article>):Promise<void>;
+
+export function SyncSettingsFromRemote(arg1:string):Promise<void>;

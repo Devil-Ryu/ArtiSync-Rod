@@ -34,16 +34,16 @@ export function Login() {
   return window['go']['platforms']['RodZhiHu']['Login']();
 }
 
-export function OpenPage(arg1) {
-  return window['go']['platforms']['RodZhiHu']['OpenPage'](arg1);
+export function OpenPage(arg1, arg2) {
+  return window['go']['platforms']['RodZhiHu']['OpenPage'](arg1, arg2);
 }
 
 export function Publish() {
   return window['go']['platforms']['RodZhiHu']['Publish']();
 }
 
-export function SetAccount(arg1) {
-  return window['go']['platforms']['RodZhiHu']['SetAccount'](arg1);
+export function SetAccount(arg1, arg2) {
+  return window['go']['platforms']['RodZhiHu']['SetAccount'](arg1, arg2);
 }
 
 export function SetArticle(arg1) {
@@ -54,8 +54,8 @@ export function SetController(arg1, arg2) {
   return window['go']['platforms']['RodZhiHu']['SetController'](arg1, arg2);
 }
 
-export function Start(arg1, arg2, arg3, arg4, arg5, arg6) {
-  return window['go']['platforms']['RodZhiHu']['Start'](arg1, arg2, arg3, arg4, arg5, arg6);
+export function Start(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) {
+  return window['go']['platforms']['RodZhiHu']['Start'](arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 }
 
 export function UpdatePlatformInfo() {

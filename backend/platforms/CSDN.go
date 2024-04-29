@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // RodCSDN CSDN机器人
@@ -109,11 +110,11 @@ func (csdn *RodCSDN) CheckAuthentication() (authInfo map[string]string, err erro
 }
 
 // Login 登录CSDN后把cookie保存到本地（重写方法）
-func (csdn *RodCSDN) Login() (accounts []db.Account, err error) {
+func (csdn *RodCSDN) Login() (account db.Account, err error) {
 	// 检查基础配置
 	err = csdn.CheckConfig(csdn.Config)
 	if err != nil {
-		return accounts, err
+		return account, err
 	}
 
 	// 打开一个新的浏览器用作登录
@@ -144,30 +145,28 @@ func (csdn *RodCSDN) Login() (accounts []db.Account, err error) {
 				cookieParams := proto.CookiesToParams(loginCookies)
 
 				// 获取登录信息
-				csdn.SetAccount(&db.Account{Cookies: cookieParams})
+				csdn.SetAccount(&db.Account{Cookies: cookieParams}, nil)
 				autInfo, err := csdn.CheckAuthentication()
 				if err != nil {
-					return accounts, err
+					return account, err
 				}
 
-				// 存入数据库
-				accounts, err = csdn.DBController.CreateAccounts([]db.Account{{
+				account = db.Account{
 					PlatformKey:   csdn.Key,
 					PlatformAlias: csdn.Alias,
-					Username:      autInfo["name"], // 手动登录的默认没有
-					LoginType:     "AUTU_1",        // 手动登录的默认没有
-					Password:      "",              // 手动登录的默认没有
-					Cookies:       cookieParams}})
-				if err != nil {
-					return accounts, err
+					Username:      autInfo["name"],         // 手动登录的默认没有
+					LoginType:     utils.LoginTypeRedirect, // 手动登录的默认没有
+					Password:      "",                      // 手动登录的默认没有
+					Cookies:       cookieParams,
 				}
-				csdn.SetAccount(nil) // 清空缓存
+
+				csdn.SetAccount(nil, nil) // 清空缓存
 				break
 			}
 		}
 	}
 
-	return accounts, err
+	return account, err
 }
 
 // Publish 发布文章（重写方法）
@@ -177,6 +176,7 @@ func (csdn *RodCSDN) Publish() (err error) {
 	err = csdn.CheckConfig(csdn.Config)
 	if err != nil {
 		csdn.Article.Status = utils.PublishedFailed
+		csdn.AccountProgress.Status = utils.PublishedFailed
 		return err
 	}
 
@@ -188,6 +188,7 @@ func (csdn *RodCSDN) Publish() (err error) {
 	// 确认是否有账号
 	if csdn.HasAccount() == false {
 		csdn.Article.Status = utils.PublishedFailed
+		csdn.AccountProgress.Status = utils.PublishedFailed
 		return fmt.Errorf("CSDN账号未设置")
 	}
 
@@ -204,7 +205,8 @@ func (csdn *RodCSDN) Publish() (err error) {
 	err = csdn.RODController.Browser.SetCookies(csdn.Account.Cookies)
 	if err != nil {
 		csdn.Article.Status = utils.PublishedFailed
-		// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+		csdn.AccountProgress.Status = utils.PublishedFailed
+		runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 		return err
 	}
 
@@ -221,7 +223,8 @@ func (csdn *RodCSDN) Publish() (err error) {
 		uploadURL, err := csdn.uploadImage(page, imagePath)
 		if err != nil {
 			csdn.Article.Status = utils.PublishedFailed
-			// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+			csdn.AccountProgress.Status = utils.PublishedFailed
+			runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 			return err
 		}
 		csdn.Article.MarkdownTool.ImagesInfo[index].UploadURL = uploadURL
@@ -232,7 +235,8 @@ func (csdn *RodCSDN) Publish() (err error) {
 	savePath, err := csdn.Article.MarkdownTool.SaveToMarkdown() // 保存到本地
 	if err != nil {
 		csdn.Article.Status = utils.PublishedFailed
-		// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+		csdn.AccountProgress.Status = utils.PublishedFailed
+		runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 		return fmt.Errorf("保存Markdown失败: %w", err)
 	}
 	/*上传文章*/
@@ -241,10 +245,11 @@ func (csdn *RodCSDN) Publish() (err error) {
 	csdn.UpdatePlatformInfo()
 	page.MustElement(csdn.Config.SaveArticleBtnSelector).MustClick() // 点击保存
 
-	csdn.Article.Status = utils.PublishedSuccess
+	// csdn.Article.Status = utils.PublishedSuccess
+	csdn.AccountProgress.Status = utils.PublishedSuccess
 	// 获取URL并更新
-	// csdn.Article.PlatformsInfo[csdn.PlatformIndex].PublishURL = csdn.Config.ArticleManagePage
-	// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+	csdn.AccountProgress.PublishURL = csdn.Config.ArticleManagePage
+	runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 
 	return nil
 
@@ -254,17 +259,17 @@ func (csdn *RodCSDN) Publish() (err error) {
 func (csdn *RodCSDN) UpdatePlatformInfo() {
 
 	// 更新文章中平台上传的进度
-	// csdn.Article.PlatformsInfo[csdn.PlatformIndex].StepCount++
-	// csdn.Article.PlatformsInfo[csdn.PlatformIndex].Progress = float32(csdn.Article.PlatformsInfo[csdn.PlatformIndex].StepCount) / float32(len(csdn.Article.MarkdownTool.ImagesInfo)+1) * 100 // +1是因为后面还有一个上传文章
+	csdn.AccountProgress.StepCount++
+	csdn.AccountProgress.Progress = float32(csdn.AccountProgress.StepCount) / float32(len(csdn.Article.MarkdownTool.ImagesInfo)+1) * 100 // +1是因为后面还有一个上传文章
 
 	// 更新文章总上传进度
 	csdn.Article.Progress = 0
-	for _, platformInfo := range csdn.Article.PlatformsInfo {
-		csdn.Article.Progress += platformInfo.Progress
+	for _, accountInfo := range csdn.Article.SelectAccounts {
+		csdn.Article.Progress += accountInfo.Progress
 	}
-	csdn.Article.Progress = csdn.Article.Progress / float32(len(csdn.Article.PlatformsInfo))
+	csdn.Article.Progress = csdn.Article.Progress / float32(len(csdn.Article.SelectAccounts))
 
-	// runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
+	runtime.EventsEmit(csdn.Ctx, "UpdatePlatformInfo")
 }
 
 /****************************自定义函数区****************************/

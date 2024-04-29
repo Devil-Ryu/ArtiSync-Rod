@@ -6,24 +6,26 @@
                 <Toolbar class="mb-4">
                     <template #start>
                         <Button label="新增账户" icon="pi pi-plus" severity="success" class="mr-2" @click="newAccount" />
-                        <!-- <Button label="删除账户" icon="pi pi-trash" severity="danger" @click="confirmDeleteAccount"
-                            :disabled="!selectedProducts || !selectedProducts.length" /> -->
-                        <Button label="测试授权" icon="pi pi-upload" severity="help" @click="()=>{console.log('refresh platforms'); RefreshPlatforms().then(res=>console.log('res:', res))}" />
+                        <!-- <Button label="测试授权" icon="pi pi-upload" severity="help" @click="()=>{console.log('refresh platforms'); RefreshPlatforms().then(res=>console.log('res:', res))}" /> -->
                     </template>
 
                     <template #end>
                         <FileUpload mode="basic" accept="image/*" :maxFileSize="1000000" label="Import" chooseLabel="导入"
-                            class="mr-2 inline-block" />
-                        <Button label="导出" icon="pi pi-upload" severity="help" @click="exportCSV($event)" />
+                            class="mr-2 inline-block" :disabled="true"/>
+                        <Button label="导出" icon="pi pi-upload" severity="help" @click="exportCSV($event)" :disabled="true"/>
                     </template>
                 </Toolbar>
-                <DataTable paginator :rows="10" :value="dataTable" v-model:filters="dataFilters" filterDisplay="menu"
+                <DataTable paginator :rows="10" :value="accountsStore.accounts" v-model:filters="dataFilters" filterDisplay="menu"
                     editMode="cell" size="small">
 
                     <!-- <Column field="PlatformKey" header="平台Key"></Column> -->
                     <Column field="PlatformAlias" header="平台名称"></Column>
                     <Column field="Username" header="用户名"></Column>
-                    <Column field="LoginType" header="登录方式"></Column>
+                    <Column field="LoginType" header="登录方式">
+                        <template #body="{ data, field }">
+                            {{  accountsStore.loginTypesMap[data[field]]  }}
+                        </template>
+                    </Column>
                     <Column field="Disabled" header="状态">
                         <template #body="{ data, field }">
                             <Tag :severity="data[field] ? 'danger' : 'success'">{{ data[field] ? '禁用' : '启用' }}</Tag>
@@ -50,9 +52,7 @@
         </template>
         
         <TabView 
-            pt:nav:class="justify-content-center" 
-            pt:inkbar:class="  " 
-            :activeIndex="activeTabIndex"
+            v-model:activeIndex="activeTabIndex"
         >
             <TabPanel header="跳转授权">
                 <div class="field">
@@ -74,7 +74,7 @@
                 </div>
                 <div class="field">
                     <label for="LoginType">登录方式</label>
-                    <Dropdown id="LoginType" v-model="account.LoginType" :options="[]" optionLabel="label"
+                    <Dropdown id="LoginType" v-model="account.LoginType" :options="accountsStore.loginTypes" optionLabel="label" optionValue="value"
                         placeholder="请选择">
                     </Dropdown>
                 </div>
@@ -82,7 +82,7 @@
                     <label for="Username">用户名</label>
                     <InputText id="Username" v-model.trim="account.Username" required="true" autofocus />
                 </div>
-                <div class="field">
+                <div class="field" v-if="account.LoginType !== 'AUTH_REDIRECT'">
                     <label for="Password">密码</label>
                     <InputText id="Password" v-model="account.Password" required="true" />
                 </div>
@@ -102,6 +102,8 @@ import { QueryAccounts, CreateAccounts, UpdateAccount, DeleteAccount } from '@/w
 import { RefreshPlatforms } from '@/wailsjs/go/application/ATApp'
 import { usePlatformsStore } from '@/src/store/platform.js'
 import { useToast } from 'primevue/usetoast';
+import { useAccountsStore } from '@/src/store/accounts.js'
+const accountsStore = useAccountsStore()
 
 
 const toast = useToast();
@@ -110,11 +112,6 @@ const accountDialog = ref(false);
 const account = ref({});
 const activeTabIndex = ref(0);
 
-const dataTable = ref([
-    { PlatformKey: 'WeiBo', PlatformAlias: '微博', Username: '123456', LoginType: '密码', Disabled: false },
-    { PlatformKey: 'WeiXin', PlatformAlias: '微信', Username: '654321', LoginType: '验证码', Disabled: true },
-    { PlatformKey: 'QQ', PlatformAlias: 'QQ', Username: '987654', LoginType: '密码', Disabled: false },
-]);
 const dataFilters = ref({
 })
 
@@ -129,6 +126,7 @@ const editAccount = (act) => {
     activeTabIndex.value = 1;
     account.value = { ...act };
     accountDialog.value = true;
+    console.log("edit account", act);
 };
 
 const saveAccount = () => {
@@ -136,8 +134,8 @@ const saveAccount = () => {
         // update account
         UpdateAccount(account.value).then(res => {
             console.log("update account", res);
-            let index = dataTable.value.findIndex(item => item.ID === account.value.ID);
-            dataTable.value[index] = res;
+            let index = accountsStore.accounts.findIndex(item => item.ID === account.value.ID);
+            accountsStore.accounts[index] = res;
             toast.add({ severity: 'success', summary: '更新成功', detail: res.Username + "已经更新", life: 3000 });
             accountDialog.value = false;
             account.value = {};
@@ -152,7 +150,7 @@ const saveAccount = () => {
         console.log("create account", account.value);
         CreateAccounts([account.value]).then(res => {
             console.log("create account", res[0]);
-            dataTable.value.push(res[0]);
+            accountsStore.accounts.push(res[0]);
             toast.add({ severity: 'success', summary: '创建成功', detail: res[0].Username + " 账户创建成功", life: 3000 });
             accountDialog.value = false;
             account.value = {};
@@ -167,8 +165,8 @@ const deleteAccount = (act) => {
     console.log("delete account", act);
     DeleteAccount(act).then(res => {
         console.log("delete account", res);
-        let index = dataTable.value.findIndex(item => item.ID === act.ID);
-        dataTable.value.splice(index, 1);
+        let index = accountsStore.accounts.findIndex(item => item.ID === act.ID);
+        accountsStore.accounts.splice(index, 1);
         toast.add({ severity: 'success', summary: '删除成功', detail: act.Username + " 账户删除成功", life: 3000 });
     }).catch(err => {
         console.log("delete account error", err);
@@ -184,9 +182,18 @@ const authAccount = () => {
             toast.add({ severity: 'warn', summary: '授权取消', detail: "返回账户为: null", life: 3000 });
             return;
         }
-        account.value = res[0]
-        dataTable.value.push(res[0]);
-        toast.add({ severity: 'success', summary: '授权成功', detail: res[0].ID + " 账户授权成功", life: 3000 });
+        account.value = {
+            ID: account.value.ID,
+            PlatformKey: res.PlatformKey,
+            PlatformAlias: res.PlatformAlias,
+            Username: res.Username,
+            LoginType: res.LoginType,
+            Password: res.Password,
+            Cookies: res.Cookies,
+            Disabled: false,
+        }
+        toast.add({ severity: 'success', summary: '授权成功', detail: res.Username + " 账户授权成功", life: 3000 });
+        // 没有跳转TODO
         activeTabIndex.value = 1;
     }).catch(err => {
         console.log("auth account error", err);
@@ -195,12 +202,12 @@ const authAccount = () => {
 };
 
 
-onMounted(() => {
-    console.log('mounted');
-    QueryAccounts().then(res => {
-        console.log("res", res);
-        dataTable.value = res;
-    })
-});
+// onMounted(() => {
+//     console.log('mounted');
+//     QueryAccounts().then(res => {
+//         console.log("res", res);
+//         accountsStore.accounts = res;
+//     })
+// });
 
 </script>

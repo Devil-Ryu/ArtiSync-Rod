@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/proto"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // RodZhiHu ZhiHu 机器人
@@ -48,18 +49,22 @@ func NewRodZhiHu() *RodZhiHu {
 }
 
 // Login 登录CSDN后把cookie保存到数据库（重写方法）
-func (zhihu *RodZhiHu) Login() (accounts []db.Account, err error) {
+func (zhihu *RodZhiHu) Login() (account db.Account, err error) {
 	// 检查基础配置
 	err = zhihu.CheckConfig(zhihu.Config)
 	if err != nil {
-		return accounts, err
+		return account, err
 	}
 
 	// 打开一个新的浏览器用作登录
 	rdc := controller.NewRODController()
 	rdc.StartBrowser(false) // 显示浏览器
 	// 确认浏览器关闭
-	defer rdc.CloseBrowser()
+	defer func() {
+		if rdc.Browser != nil {
+			rdc.CloseBrowser()
+		}
+	}()
 
 	var loginCookies []*proto.NetworkCookie
 	// 访问登录页面
@@ -84,30 +89,29 @@ func (zhihu *RodZhiHu) Login() (accounts []db.Account, err error) {
 				cookieParams := proto.CookiesToParams(loginCookies)
 
 				// 获取登录信息
-				zhihu.SetAccount(&db.Account{Cookies: cookieParams})
+				zhihu.RODController = rdc // 公用同一个浏览器
+				zhihu.SetAccount(&db.Account{Cookies: cookieParams}, nil)
 				autInfo, err := zhihu.CheckAuthentication()
 				if err != nil {
-					return accounts, err
+					return account, err
 				}
 
-				// 存入数据库
-				accounts, err = zhihu.DBController.CreateAccounts([]db.Account{{
+				account = db.Account{
 					PlatformKey:   zhihu.Key,
 					PlatformAlias: zhihu.Alias,
-					Username:      autInfo["name"], // 手动登录的默认没有
-					LoginType:     "AUTU_1",        // 手动登录的默认没有
-					Password:      "",              // 手动登录的默认没有
-					Cookies:       cookieParams}})
-				if err != nil {
-					return accounts, err
+					Username:      autInfo["name"],         // 手动登录的默认没有
+					LoginType:     utils.LoginTypeRedirect, // 手动登录的默认没有
+					Password:      "",                      // 手动登录的默认没有
+					Cookies:       cookieParams,
 				}
-				zhihu.SetAccount(nil) // 清空缓存
+
+				zhihu.SetAccount(nil, nil) // 清空缓存
 				break
 			}
 		}
 	}
 
-	return accounts, err
+	return account, err
 }
 
 // CheckAuthentication 检查是否授权（重写方法）
@@ -129,7 +133,11 @@ func (zhihu *RodZhiHu) CheckAuthentication() (authInfo map[string]string, err er
 	}
 
 	// 确认浏览器关闭
-	defer zhihu.RODController.CloseBrowser()
+	defer func() {
+		if zhihu.RODController.Browser != nil {
+			zhihu.RODController.CloseBrowser()
+		}
+	}()
 
 	profileURL := zhihu.Config.ProfilePageURL
 
@@ -177,6 +185,7 @@ func (zhihu *RodZhiHu) Publish() (err error) {
 	// 检查基础配置
 	err = zhihu.CheckConfig(zhihu.Config)
 	if err != nil {
+		zhihu.AccountProgress.Status = utils.PublishedFailed
 		zhihu.Article.Status = utils.PublishedFailed
 		return err
 	}
@@ -188,6 +197,7 @@ func (zhihu *RodZhiHu) Publish() (err error) {
 
 	// 确认是否有账号
 	if zhihu.HasAccount() == false {
+		zhihu.AccountProgress.Status = utils.PublishedFailed
 		zhihu.Article.Status = utils.PublishedFailed
 		return fmt.Errorf(zhihu.Alias + "账号未设置")
 	}
@@ -198,13 +208,18 @@ func (zhihu *RodZhiHu) Publish() (err error) {
 		zhihu.RODController.StartBrowser(false) // 启动浏览器
 	}
 	// 确认浏览器关闭
-	defer zhihu.RODController.CloseBrowser()
+	defer func() {
+		if zhihu.RODController.Browser != nil {
+			zhihu.RODController.CloseBrowser()
+		}
+	}()
 
 	/*设置浏览器cookies*/
 	err = zhihu.RODController.Browser.SetCookies(zhihu.Account.Cookies)
 	if err != nil {
+		zhihu.AccountProgress.Status = utils.PublishedFailed
 		zhihu.Article.Status = utils.PublishedFailed
-		// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 		return err
 	}
 
@@ -216,8 +231,9 @@ func (zhihu *RodZhiHu) Publish() (err error) {
 		imagePath := path.Join(zhihu.Article.MarkdownTool.ImagePath, imageInfo.URL)
 		uploadURL, err := zhihu.uploadImage(page, imagePath)
 		if err != nil {
+			zhihu.AccountProgress.Status = utils.PublishedFailed
 			zhihu.Article.Status = utils.PublishedFailed
-			// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+			runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 			return err
 		}
 		zhihu.Article.MarkdownTool.ImagesInfo[index].UploadURL = uploadURL
@@ -229,7 +245,8 @@ func (zhihu *RodZhiHu) Publish() (err error) {
 	savePath, err := zhihu.Article.MarkdownTool.SaveToMarkdown()
 	if err != nil {
 		zhihu.Article.Status = utils.PublishedFailed
-		// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+		zhihu.AccountProgress.Status = utils.PublishedFailed
+		runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 		return fmt.Errorf("保存Markdown失败: %w", err)
 	}
 	/*上传文章*/
@@ -242,10 +259,11 @@ func (zhihu *RodZhiHu) Publish() (err error) {
 
 	zhihu.UpdatePlatformInfo()
 
-	zhihu.Article.Status = utils.PublishedSuccess
+	// zhihu.Article.Status = utils.PublishedSuccess
+	zhihu.AccountProgress.Status = utils.PublishedSuccess
 	// 获取URL并更新
-	// zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].PublishURL = zhihu.Config.ArticleManagePage
-	// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+	zhihu.AccountProgress.PublishURL = zhihu.Config.ArticleManagePage
+	runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 	page.MustWaitStable()
 
 	return nil
@@ -256,17 +274,17 @@ func (zhihu *RodZhiHu) Publish() (err error) {
 func (zhihu *RodZhiHu) UpdatePlatformInfo() {
 
 	// 更新文章中平台上传的进度
-	// zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].StepCount++
-	// zhihu.Article.PlatformsInfo[zhihu.PlatformIndex].Progress = float32(zhihu.Article.PlatformsInfo[ZhiHu.PlatformIndex].StepCount) / float32(len(ZhiHu.Article.MarkdownTool.ImagesInfo)+1) * 100 // +1是因为后面还有一个上传文章
+	zhihu.AccountProgress.StepCount++
+	zhihu.AccountProgress.Progress = float32(zhihu.AccountProgress.StepCount) / float32(len(zhihu.Article.MarkdownTool.ImagesInfo)+1) * 100 // +1是因为后面还有一个上传文章
 
 	// // 更新文章总上传进度
 	zhihu.Article.Progress = 0
-	for _, platformInfo := range zhihu.Article.PlatformsInfo {
-		zhihu.Article.Progress += platformInfo.Progress
+	for _, accountInfo := range zhihu.Article.SelectAccounts {
+		zhihu.Article.Progress += accountInfo.Progress
 	}
-	zhihu.Article.Progress = zhihu.Article.Progress / float32(len(zhihu.Article.PlatformsInfo))
+	zhihu.Article.Progress = zhihu.Article.Progress / float32(len(zhihu.Article.SelectAccounts))
 
-	// runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
+	runtime.EventsEmit(zhihu.Ctx, "UpdatePlatformInfo")
 }
 
 /****************************自定义函数区****************************/

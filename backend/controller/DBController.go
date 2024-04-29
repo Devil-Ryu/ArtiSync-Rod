@@ -228,10 +228,11 @@ func (d *DBController) GetAccount(account db.Account) (db.Account, error) {
 		return account, err
 	}
 
-	result := d.DB.Model(&db.Account{}).First(&account)
+	result := d.DB.First(&account, account.ID)
 	if result.Error != nil {
 		return account, result.Error
 	}
+
 	return account, nil
 }
 

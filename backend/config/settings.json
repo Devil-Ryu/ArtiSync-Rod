@@ -1,9 +1,9 @@
 [
-    {"Layer":"1", "Key":"browser_headless", "Alias":"无头浏览器配置", "Category":"browser", "Value":"true"},
-    {"Layer":"1", "Key":"browser_timeout", "Alias":"浏览器超时时长配置", "Category":"browser", "Value":"10"},
-    {"Layer":"1", "Key":"browser_check_time", "Alias":"浏览器检查间隔配置", "Category":"browser", "Value":"1"},
-    {"Layer":"1", "Key":"browser_publish_interval", "Alias":"浏览器发布间隔配置(s)", "Category":"browser", "Value":"60"},
-    {"Layer":"2", "Key":"article_image_dir", "Alias":"图片文件夹位置", "Category":"article", "Value":""},
-    {"Layer":"2", "Key":"article_image_select", "Alias":"获取图片方式", "Category":"article", "Value":"relative"},
-    {"Layer":"3", "Key":"db_path", "Alias":"数据库位置", "Category":"db", "Value":""}
+    {"Layer":"1", "Key":"browser_headless", "Alias":"无头浏览器配置", "Category":"browser", "CategoryAlias":"浏览器配置", "Value":"true"},
+    {"Layer":"1", "Key":"browser_timeout", "Alias":"浏览器超时时长配置", "Category":"browser", "CategoryAlias":"浏览器配置", "Value":"10"},
+    {"Layer":"1", "Key":"browser_check_time", "Alias":"浏览器检查间隔配置", "Category":"browser", "CategoryAlias":"浏览器配置", "Value":"1"},
+    {"Layer":"1", "Key":"browser_publish_interval", "Alias":"浏览器发布间隔配置(s)", "Category":"browser", "CategoryAlias":"浏览器配置", "Value":"60"},
+    {"Layer":"2", "Key":"article_image_dir", "Alias":"图片文件夹位置", "Category":"article", "CategoryAlias":"文章配置", "Value":""},
+    {"Layer":"2", "Key":"article_image_select", "Alias":"获取图片方式", "Category":"article", "CategoryAlias":"文章配置", "Value":"relative"},
+    {"Layer":"3", "Key":"db_path", "Alias":"数据库位置", "Category":"db", "CategoryAlias":"系统配置", "Value":""}
 ]

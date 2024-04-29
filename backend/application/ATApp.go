@@ -13,6 +13,7 @@ import (
 	"path"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // ATApp App
@@ -39,7 +40,6 @@ func (at *ATApp) RefreshPlatforms() (err error) {
 	if at.HasController() == false {
 		return fmt.Errorf("控制器未设置")
 	}
-
 	// 遍历平台，实例化平台控制器
 	for _, param := range at.Platforms {
 		switch platform := param.(type) {
@@ -121,9 +121,10 @@ func (at *ATApp) LoadArticles(filePath string, imagePath string) (articleList []
 	for _, file := range files {
 		if path.Ext(file.Name()) == ".md" {
 			article := utils.Article{
-				Title:           file.Name()[:len(file.Name())-3],
-				Status:          utils.Waiting,
-				SelectPlatforms: []string{},
+				Title:          file.Name()[:len(file.Name())-3],
+				Status:         utils.Waiting,
+				SelectAccounts: []utils.AccountInfo{},
+				// TODO(修复选择账号类型的问题)
 			}
 
 			// 设置文章路径以及图片路径以及图片读取方式
@@ -142,10 +143,17 @@ func (at *ATApp) LoadArticles(filePath string, imagePath string) (articleList []
 	return at.ArticleList, nil
 }
 
-// SyncSelectPlatforms 同步选择的平台
-func (at *ATApp) SyncSelectPlatforms(data []utils.Article) {
-	for i := 0; i < len(data); i++ {
-		at.ArticleList[i].SelectPlatforms = data[i].SelectPlatforms
+// SyncSelectAccounts 同步选择的平台
+func (at *ATApp) SyncSelectAccounts(articles []utils.Article) {
+	for index, article := range articles {
+		at.ArticleList[index].SelectAccounts = []utils.AccountInfo{}
+		// 遍历文章选择的平台，给平台信息增加初始信息，平台索引和选择平台列表中的索引一一对应
+		for _, account := range article.SelectAccounts {
+			at.ArticleList[index].SelectAccounts = append(at.ArticleList[index].SelectAccounts, utils.AccountInfo{
+				ID: account.ID, Username: account.Username, PlatformKey: account.PlatformKey, PlatformAlias: account.PlatformAlias, Status: utils.PublishWating, Progress: 0, StepCount: 0,
+			})
+		}
+		articles[index] = article
 	}
 }
 
@@ -183,24 +191,58 @@ func (at *ATApp) SyncPlatformsInfoFromRemote(remoteURL string) (err error) {
 
 }
 
+// SyncSettingsFromRemote 同步设置(必要-统一方法)
+func (at *ATApp) SyncSettingsFromRemote(remoteURL string) (err error) {
+	// 下载链接文件
+	content, err := utils.DownloadFile(remoteURL)
+	if err != nil {
+		return err
+	}
+
+	// 解析链接文件
+	var data interface{}
+	err = json.Unmarshal(content, &data)
+	if err != nil {
+		return err
+	}
+
+	var settings []db.Setting
+	err = mapstructure.Decode(data, &settings)
+	if err != nil {
+		return fmt.Errorf("配置解码失败: %w", err)
+	}
+
+	// 保存设置信息到数据库
+	if at.HasController() == false { // 如果没有数据库控制器则返回错误
+		return fmt.Errorf("数据库控制器未设置")
+	}
+	_, err = at.DBController.CreateSettings(settings)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
 // GetArticlesInfo 获取文章信息
 func (at *ATApp) GetArticlesInfo() []utils.Article {
 	return at.ArticleList
 }
 
-// genPlatformsInfo 生成平台信息
-func (at *ATApp) genPlatformsInfo() {
-	// 遍历每个文章选择的平台，给平台信息增加初始信息，平台索引和选择平台列表中的索引一一对应
-	for index := range at.ArticleList {
-		for _, platformName := range at.ArticleList[index].SelectPlatforms {
-			at.ArticleList[index].PlatformsInfo = append(at.ArticleList[index].PlatformsInfo, utils.PlatformInfo{
-				Name: platformName, Status: utils.PublishWating, Progress: 0, StepCount: 0,
-			})
-		}
-	}
-}
+// // genPlatformsInfo 生成平台信息
+// func (at *ATApp) genPlatformsInfo() {
+// 	// 遍历每个文章选择的平台，给平台信息增加初始信息，平台索引和选择平台列表中的索引一一对应
+// 	for index := range at.ArticleList {
+// 		for _, account := range at.ArticleList[index].SelectAccounts {
+// 			at.ArticleList[index].AccountsInfo = append(at.ArticleList[index].AccountsInfo, utils.AccountInfo{
+// 				ID: account.ID, PlatformKey: account.PlatformKey, PlatformAlias: account.PlatformAlias, Status: utils.PublishWating, Progress: 0, StepCount: 0,
+// 			})
+// 		}
+// 	}
+// }
 
-func (at *ATApp) publishToAccount(account db.Account, article *utils.Article) (err error) {
+func (at *ATApp) publishToAccount(account db.Account, article *utils.Article, accountProgress *utils.AccountInfo) (err error) {
 	// 获取平台Key
 	platormKey := account.PlatformKey
 
@@ -208,13 +250,13 @@ func (at *ATApp) publishToAccount(account db.Account, article *utils.Article) (e
 	switch platormKey {
 	case "CSDN":
 		platform := platforms.NewRodCSDN()
-		err = platform.Start(at.DBController, at.RODController, &platform.Config, account, article, platform.Publish) // 实例化机器人
+		err = platform.Start(at.Ctx, at.DBController, at.RODController, &platform.Config, &account, article, accountProgress, platform.Publish) // 实例化机器人
 		if err != nil {
 			return err
 		}
 	case "ZhiHu":
 		platform := platforms.NewRodZhiHu()
-		err = platform.Start(at.DBController, at.RODController, &platform.Config, account, article, platform.Publish) // 实例化机器人
+		err = platform.Start(at.Ctx, at.DBController, at.RODController, &platform.Config, &account, article, accountProgress, platform.Publish) // 实例化机器人
 		if err != nil {
 			return err
 		}
@@ -225,26 +267,42 @@ func (at *ATApp) publishToAccount(account db.Account, article *utils.Article) (e
 
 // Publish 发布文章
 func (at *ATApp) Publish() (err error) {
-	at.genPlatformsInfo() // 生成要上传的平台的基础信息
+	// at.genPlatformsInfo() // 生成要上传的平台的基础信息
 
 	// 获取启用的账号信息
-	accountcs, err := at.DBController.QueryAccounts(map[string]interface{}{"Disabled": false})
-	log.Println("账号数量: ", len(accountcs))
-	if err != nil {
-		return err
-	}
-
+	// accountcs, err := at.DBController.QueryAccounts(map[string]interface{}{"Disabled": false})
+	// log.Println("账号数量: ", len(accountcs))
+	// if err != nil {
+	// 	return err
+	// }
 	// 遍历文章
 	for index := range at.ArticleList {
 		fmt.Println("文章: ", at.ArticleList[index].Title)
 		// 遍历账号
-		for _, account := range accountcs {
-			fmt.Println("账号: ", account)
-			err = at.publishToAccount(account, &at.ArticleList[index])
+		publishCount := 0
+		for accountIndex, accountProgress := range at.ArticleList[index].SelectAccounts {
+			account, err := at.DBController.GetAccount(db.Account{ID: accountProgress.ID})
 			if err != nil {
 				return err
 			}
+			fmt.Println("账号: ", account)
+			err = at.publishToAccount(account, &at.ArticleList[index], &at.ArticleList[index].SelectAccounts[accountIndex])
+			if err != nil {
+				return err
+			}
+			publishCount++
 		}
+
+		// 判断是否每个账号都发布完成
+		if publishCount == len(at.ArticleList[index].SelectAccounts) {
+			at.ArticleList[index].Status = utils.PublishedSuccess
+			fmt.Println("文章发布成功: ", at.ArticleList[index].Title)
+		} else {
+			at.ArticleList[index].Status = utils.PublishedFailed
+			fmt.Println("文章发布失败: ", at.ArticleList[index].Title)
+		}
+
+		runtime.EventsEmit(at.Ctx, "UpdatePlatformInfo")
 
 	}
 

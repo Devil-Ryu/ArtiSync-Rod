@@ -34,6 +34,13 @@ const (
 	Running          string = "运行中"  // 运行中
 )
 
+// 登录方式枚举
+const (
+	LoginTypeManul    string = "AUTH_MANUAL"   // 手动登录
+	LoginTypeBatch    string = "AUTH_BATCH"    // 批量导入
+	LoginTypeRedirect string = "AUTH_REDIRECT" // 跳转授权
+)
+
 // CommonUtils 常用工具
 type CommonUtils struct {
 	Ctx context.Context

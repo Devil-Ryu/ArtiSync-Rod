@@ -42,6 +42,10 @@ export function SyncPlatformsInfoFromRemote(arg1) {
   return window['go']['application']['ATApp']['SyncPlatformsInfoFromRemote'](arg1);
 }
 
-export function SyncSelectPlatforms(arg1) {
-  return window['go']['application']['ATApp']['SyncSelectPlatforms'](arg1);
+export function SyncSelectAccounts(arg1) {
+  return window['go']['application']['ATApp']['SyncSelectAccounts'](arg1);
+}
+
+export function SyncSettingsFromRemote(arg1) {
+  return window['go']['application']['ATApp']['SyncSettingsFromRemote'](arg1);
 }

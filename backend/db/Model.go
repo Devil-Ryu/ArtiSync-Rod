@@ -10,11 +10,12 @@ import (
 
 // Setting 配置
 type Setting struct {
-	Layer    string // 层级
-	Key      string `gorm:"primaryKey"` // 键
-	Alias    string // 别名
-	Category string // 分类
-	Value    string // 值
+	Layer         string // 层级
+	Key           string `gorm:"primaryKey"` // 键
+	Alias         string // 别名
+	Category      string // 分类
+	CategoryAlias string // 分类别名
+	Value         string // 值
 }
 
 // Account 账户

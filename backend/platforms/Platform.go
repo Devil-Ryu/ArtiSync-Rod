@@ -14,13 +14,14 @@ import (
 
 // Model 平台模型
 type Model struct {
-	Key           string                    // 平台唯一标识
-	Alias         string                    // 平台别名
-	Account       *db.Account               // 平台账号
-	Article       *utils.Article            // 待上传文章
-	Ctx           context.Context           // 上下文
-	RODController *controller.RODController // 机器人控制器
-	DBController  *controller.DBController  // 数据库控制器
+	Key             string                    // 平台唯一标识
+	Alias           string                    // 平台别名
+	Account         *db.Account               // 平台账号
+	AccountProgress *utils.AccountInfo        // 平台账号进度
+	Article         *utils.Article            // 待上传文章
+	Ctx             context.Context           // 上下文
+	RODController   *controller.RODController // 机器人控制器
+	DBController    *controller.DBController  // 数据库控制器
 }
 
 // SetArticle 设置待上传文章
@@ -29,8 +30,9 @@ func (m *Model) SetArticle(article *utils.Article) {
 }
 
 // SetAccount 设置平台账号
-func (m *Model) SetAccount(account *db.Account) {
+func (m *Model) SetAccount(account *db.Account, accountProgress *utils.AccountInfo) {
 	m.Account = account
+	m.AccountProgress = accountProgress
 }
 
 // SetController 设置控制器(必要-设置平台控制器)
@@ -55,14 +57,15 @@ func (m *Model) HasAccount() bool {
 }
 
 // Start 启动平台(必要-需要重写)
-func (m *Model) Start(dbc *controller.DBController, rdc *controller.RODController, config interface{}, account db.Account, article *utils.Article, publishFunc func() error) (err error) {
+func (m *Model) Start(ctx context.Context, dbc *controller.DBController, rdc *controller.RODController, config interface{}, account *db.Account, article *utils.Article, accountProgress *utils.AccountInfo, publishFunc func() error) (err error) {
 	err = m.InitRod(dbc, rdc, &config) // 初始化机器人
 	if err != nil {
 		return err
 	}
-	m.SetAccount(&account) // 设置账号信息
-	m.SetArticle(article)  // 设置文章信息
-	err = publishFunc()    // 发布文章
+	m.Ctx = ctx                            // 设置上下文
+	m.SetAccount(account, accountProgress) // 设置账号信息
+	m.SetArticle(article)                  // 设置文章信息
+	err = publishFunc()                    // 发布文章
 	if err != nil {
 		return err
 	}
@@ -105,7 +108,18 @@ func (m *Model) LoadConfig() (config map[string]interface{}, err error) {
 }
 
 // OpenPage 打开页面(必要-统一方法)
-func (m *Model) OpenPage(pageURL string) (err error) {
+func (m *Model) OpenPage(pageURL string, accountID uint) (err error) {
+	// 检查配置
+	if m.HasDBController() == false { // 如果没有数据库控制器则返回错误
+		return fmt.Errorf("OpenPage: 没有数据库控制器")
+	}
+
+	account, err := m.DBController.GetAccount(db.Account{ID: accountID}) // 获取账号信息
+	if err != nil {
+		return fmt.Errorf("OpenPage: %w", err)
+	}
+
+	m.SetAccount(&account, nil)
 
 	// 获取平台账号的cookies
 	if m.HasAccount() == false { // 如果没有平台账号则返回错误

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Config from "../views/Config.vue";
+import Settings from "../views/Settings.vue";
 import Platform from "../views/Platform.vue";
 import Home from "../views/Home.vue";
 import Accounts from "../views/Accounts.vue";
@@ -9,7 +9,7 @@ const router = createRouter({
   routes: [
     { path: "/", name: "home", component: Home },
     { path: "/platform", name: "platform", component: Platform },
-    { path: "/config", name: "config", component: Config },
+    { path: "/settings", name: "settings", component: Settings },
     { path: "/accounts", name: "accounts", component: Accounts },
   ],
 });

@@ -3,6 +3,7 @@
 import {controller} from '../models';
 import {db} from '../models';
 import {utils} from '../models';
+import {context} from '../models';
 
 export function CheckAuthentication():Promise<{[key: string]: string}>;
 
@@ -18,18 +19,18 @@ export function InitRod(arg1:controller.DBController,arg2:controller.RODControll
 
 export function LoadConfig():Promise<{[key: string]: any}>;
 
-export function Login():Promise<Array<db.Account>>;
+export function Login():Promise<db.Account>;
 
-export function OpenPage(arg1:string):Promise<void>;
+export function OpenPage(arg1:string,arg2:number):Promise<void>;
 
 export function Publish():Promise<void>;
 
-export function SetAccount(arg1:db.Account):Promise<void>;
+export function SetAccount(arg1:db.Account,arg2:utils.AccountInfo):Promise<void>;
 
 export function SetArticle(arg1:utils.Article):Promise<void>;
 
 export function SetController(arg1:controller.DBController,arg2:controller.RODController):Promise<void>;
 
-export function Start(arg1:controller.DBController,arg2:controller.RODController,arg3:any,arg4:db.Account,arg5:utils.Article,arg6:any):Promise<void>;
+export function Start(arg1:context.Context,arg2:controller.DBController,arg3:controller.RODController,arg4:any,arg5:db.Account,arg6:utils.Article,arg7:utils.AccountInfo,arg8:any):Promise<void>;
 
 export function UpdatePlatformInfo():Promise<void>;

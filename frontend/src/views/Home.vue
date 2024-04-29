@@ -6,15 +6,15 @@
                     <template #title>平台信息</template>
                     <template #subtitle>
                         <div class="flex justify-content-between align-items-center">
-                            <div><span>总数:</span> <span>{{ platformStore.platforms.length }}</span> <span>已授权:</span>
-                                <span>{{ platformStore.authedPlatforms }}</span>
+                            <div><span>平台总数:</span> <span>{{ platformStore.platforms.length }}</span> <span>账号总数:</span>
+                                <span>{{ accountsStore.accounts.length }}</span>
                             </div>
-                            <div><Button text>管理平台</Button></div>
+                            <div><Button text @click="router.push({path: '/platform'})">管理平台</Button></div>
                         </div>
                     </template>
                     <template #content>
                         <div class="flex flex-wrap gap-2 ">
-                            <Tag v-for="(item, index) in platformStore.platforms" :value="item.name"></Tag>
+                            <Tag v-for="(item, index) in platformStore.platforms" :value="item.Alias"></Tag>
                         </div>
                     </template>
                 </Card>
@@ -24,7 +24,7 @@
                     <template #title>文章信息</template>
                     <template #subtitle>
                         <div class="flex justify-content-between align-items-center">
-                            <div>数量: {{ dataTable.length }}</div>
+                            <div>数量: {{ articleStore.articleList.length }}</div>
                             <div><Button @click="load" text>导入文章</Button></div>
                         </div>
                     </template>
@@ -40,7 +40,7 @@
         </div>
         <Card class="mt-4 " style="height: 520px;">
             <template #content>
-                <DataTable paginator :rows="7" :value="dataTable" v-model:filters="dataFilters" filterDisplay="menu"
+                <DataTable paginator :rows="7" :value="articleStore.articleList" v-model:filters="dataFilters" filterDisplay="menu"
                     editMode="cell" size="small" class="mt-2">
                     <template #empty>
                         <div class="h-23rem">
@@ -48,18 +48,18 @@
                     </template>
                     <Column field="Title" header="名称"></Column>
 
-                    <Column field="SelectPlatforms" header="平台" class="w-10rem">
+                    <Column field="SelectAccounts" header="账户" class="w-10rem">
                         <template #body="{ data, field }">
                             <div v-if="data[field].length > 0" class="flex align-items-center gap-2"
                                 v-tooltip.top="data[field].join(', ')">
-                                <Tag>{{ data[field][0] }}</Tag>
+                                <Tag>{{ data[field][0].Username }}</Tag>
                                 <Tag v-if="data[field].length > 1">+{{ data[field].length - 1 }}</Tag>
                             </div>
-                            <div v-if="data[field].length == 0" class="text-sm text-gray-400">点击选择平台</div>
+                            <div v-if="data[field].length == 0" class="text-sm text-gray-400">点击选择账户</div>
                         </template>
                         <template #editor="{ index, data, field }">
-                            <MultiSelect v-model="dataTable[index][field]" :maxSelectedLabels="1"
-                                :options="platformStore.platforms" optionLabel="Alias" optionValue="Key" />
+                            <MultiSelect v-model="articleStore.articleList[index][field]" :maxSelectedLabels="1"
+                                :options="accountsStore.accounts" optionLabel="Username" />
                         </template>
                     </Column>
                     <Column field="Progress" header="进度" class="w-10rem">
@@ -88,9 +88,10 @@
         </Card>
         <Toast position="bottom-center" group="tr" />
         <OverlayPanel ref="op" aria-haspopup="true" aria-controls="overlay_panel">
-            <DataTable :value="platformInfoTable" size="small">
-                <Column field="Name" header="名称"></Column>
-                <Column field="Progress" header="进度" class="w-10rem">
+            <DataTable :value="accountInfoTable" size="small">
+                <Column field="Username" header="账户"></Column>
+                <Column field="PlatformAlias" header="平台"></Column>
+                <Column field="Progress" header="进度" class="w-8rem">
                     <template #body="{ data, field }">
                         <ProgressBar :value="Number(Number(data[field]).toFixed(2))" />
                     </template>
@@ -100,7 +101,7 @@
                         <Tag>{{ data[field] }}</Tag>
                     </template>
                 </Column>
-                <Column field="PublishURL" header="发布链接" class="w-5rem">
+                <Column field="PublishURL" header="发布链接" class="w-8rem">
                     <template #body="{ data }">
                         <Button icon="pi pi-external-link" size="small" text label="查看文章" @click="openPage(data)"
                             v-tooltip="data.PublishURL" />
@@ -114,22 +115,30 @@
 <script setup>
 import { usePlatformsStore, statusList } from '@/src/store/platform.js'
 import { computed, ref } from 'vue';
-import { LoadArticles, SyncSelectPlatforms, Publish, GetArticlesInfo } from '@/wailsjs/go/application/ATApp'
+import { LoadArticles, SyncSelectAccounts, Publish, GetArticlesInfo } from '@/wailsjs/go/application/ATApp'
 import { OpenPage as OpenCSDNPage } from '@/wailsjs/go/platforms/RodCSDN';
 import { OpenPage as OpenZhiHuPage } from '@/wailsjs/go/platforms/RodZhiHu';
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from 'primevue/api';
 import { EventsOn } from '@/wailsjs/runtime/runtime';
 import { OpenDir } from '@/wailsjs/go/utils/CommonUtils';
+import { useAccountsStore } from '@/src/store/accounts.js'
+import {useArticleStore} from "@/src/store/article.js"
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+const accountsStore = useAccountsStore()
+const articleStore = useArticleStore()
 
 const platformStore = usePlatformsStore()
 const toast = useToast();
 const op = ref(null)
-const dataTable = ref([])
-const platformIndex = ref(-1)
-const platformInfoTable = computed(() => {
-    if (platformIndex.value != -1) {
-        return dataTable.value[platformIndex.value].PlatformsInfo
+// const dataTable = ref([])
+const accountInfoIndex = ref(-1)
+const accountInfoTable = computed(() => {
+    if (accountInfoIndex.value != -1) {
+        return articleStore.articleList[accountInfoIndex.value].SelectAccounts
     } else {
         return []
     }
@@ -157,7 +166,8 @@ function load() {
 
         LoadArticles(selectedDir, imagePath).then(data => {
             toast.add({ severity: 'success', summary: '文章导入成功', group: 'tr', life: 1000 })
-            dataTable.value = data
+            articleStore.articleList = data
+            console.log("articleStore.articleList:", articleStore.articleList)
         }).catch(err => {
             toast.add({ severity: 'error', summary: err, group: 'tr', life: 5000 })
         })
@@ -169,7 +179,8 @@ function load() {
 }
 
 function start() {
-    SyncSelectPlatforms(dataTable.value).then(result => {
+    console.log("articleStore.articleList", articleStore.articleList)
+    SyncSelectAccounts(articleStore.articleList).then(result => {
         Publish().catch(err => {
             console.log("err: ", err)
         })
@@ -178,35 +189,35 @@ function start() {
 
 function overlayToggle(event, index) {
     console.log("index:", index)
-    platformIndex.value = index
+    accountInfoIndex.value = index
     op.value.toggle(event);
 }
 
 function openPage(data) {
-    console.log("data", data)
-    switch (data.Name) {
+    console.log("openPage", data)
+    switch (data.PlatformKey) {
         case "CSDN":
-            OpenCSDNPage(data.PublishURL)
+            console.log("CSDN", data)
+            OpenCSDNPage(data.PublishURL, data.ID).catch(err => {
+                toast.add({ severity: 'error', summary: err, group: 'tr', life: 5000 })
+            })
+            break
         case "ZhiHu":
-            OpenZhiHuPage(data.PublishURL)
+            console.log("ZhiHu", data)
+            OpenZhiHuPage(data.PublishURL, data.ID).catch(err => {
+                toast.add({ severity: 'error', summary: err, group: 'tr', life: 5000 })
+            })
+            break
     }
 }
 
 EventsOn("UpdatePlatformInfo", async () => {
     GetArticlesInfo().then(articles => {
         console.log("articles:", articles)
-        dataTable.value = articles
+        articleStore.articleList = articles
     })
 
 })
 
 
 </script>
-
-
-<!-- 请用js写一个函数进行数据转换，将下述[格式1]的数据，转换为[格式2],
-格式1: [{Title: "Python 多级字典取值", Status: "等待中", MarkdownTool: Object, Progress: 0, SelectPlatforms:[]},{Title: "Article2", Status: "等待中", MarkdownTool: Object, Progress: 0, SelectPlatforms: ["CSDN", "TTTT"]}]
-格式2: [
-    {dataTable: {name: "Python 多级字典取值", progress: 0, status:"等待中"}},
-    {dataTable: {name: "Article2", progress: 0, status:"等待中"},},
-] -->

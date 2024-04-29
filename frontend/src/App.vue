@@ -25,8 +25,10 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { usePlatformsStore } from '@/src/store/platform.js'
+import { useAccountsStore } from '@/src/store/accounts.js'
 import { EventsOn } from "@/wailsjs/runtime/runtime";
 const platformStore = usePlatformsStore()
+const accountsStore = useAccountsStore()
 
 
 const items = ref([
@@ -45,16 +47,17 @@ const items = ref([
         icon: 'pi pi-user',
         route: '/accounts'
     },
-    {
-        label: '配置',
-        icon: 'pi pi-cog',
-        route: '/config'
+    // {
+    //     label: '配置',
+    //     icon: 'pi pi-cog',
+    //     route: '/settings'
 
-    },
+    // },
 
 ]);
 
 onMounted(() => {
+    accountsStore.RefreshAccounts()
     // 进行全平台认证检查
     // platformStore.CheckAllAuth()
 })
